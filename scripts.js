@@ -81,15 +81,17 @@ function loadData() {
         detailsRow.id = detailsRowId;
         detailsRow.classList.add("details-row");
         detailsRow.style.display = "none";
+        const isDark = localStorage.getItem("theme") === "dark";
         detailsRow.innerHTML = `
           <td colspan="3">
-            <div class="p-2 rounded bg-light-subtle text-dark-subtle border small fw-normal">
+            <div class="p-2 rounded small fw-normal ${isDark ? 'bg-dark text-light border-secondary' : 'bg-light text-dark border'}">
               <strong>Type:</strong> ${entry.type} <br/>
               <strong>Categories:</strong> ${entry.categories.join(", ")} <br/>
               <strong>Reported At:</strong> ${entry.reported_at}
             </div>
           </td>
         `;
+
         tbody.appendChild(detailsRow);
 
 
