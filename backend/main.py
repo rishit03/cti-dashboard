@@ -136,12 +136,18 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
                 except Exception as e:
                     print(f"[ERROR] VT IP {ip} failed: {e}")
 
-    # === GreyNoise ===
+    # === GreyNoise (with better test IPs) ===
     if not source or source == "GreyNoise":
         headers = {
             "key": GREYNOISE_API_KEY
         }
-        sample_ips = ["185.232.67.76", "8.8.8.8", "1.1.1.1"]
+        sample_ips = [
+            "185.220.101.4",
+            "104.244.72.115",
+            "195.54.160.149",
+            "185.156.73.62",
+            "64.227.79.24"
+        ]
 
         async with httpx.AsyncClient(timeout=20.0) as client:
             for ip in sample_ips:
