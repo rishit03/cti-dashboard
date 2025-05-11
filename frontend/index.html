@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CTI Dashboard</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/1.9.3/countUp.min.js"></script>
+  <style>
+    .header-section {
+      background: linear-gradient(-45deg, #0d6efd, #6610f2, #6f42c1, #0dcaf0);
+      background-size: 400% 400%;
+      animation: gradientBG 12s ease infinite;
+      padding: 2rem;
+      border-radius: 1rem;
+      color: white;
+      margin-bottom: 2rem;
+    }
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .card:hover {
+      box-shadow: 0 0 15px rgba(0, 255, 255, 0.2), 0 0 10px rgba(0, 123, 255, 0.2);
+      transition: box-shadow 0.3s ease-in-out;
+    }
+    .badge[title] {
+      cursor: help;
+    }
+    canvas {
+      width: 100% !important;
+      max-height: 300px;
+    }
+  </style>
+</head>
+<body class="p-4">
+
+  <!-- Header -->
+  <div class="header-section text-center">
+    <h1 class="fw-bold"><i class="bi bi-shield-lock-fill me-2"></i>Cyber Threat Intelligence Dashboard</h1>
+    <p class="text-white-50 fs-5 mb-0">Real-time indicators from OTX, AbuseIPDB, and VirusTotal</p>
+  </div>
+
+  <!-- Quick Stats Row -->
+  <div class="row g-3 mb-4 text-center" id="statsRow">
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-light">
+        <div class="card-body">
+          <h6 class="text-muted">Total Indicators</h6>
+          <h4 id="totalCount" class="fw-bold">0</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-danger text-white">
+        <div class="card-body">
+          <h6 class="text-white-50">High Severity</h6>
+          <h4 id="highCount" class="fw-bold">0</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-info text-white">
+        <div class="card-body">
+          <h6 class="text-white-50">Sources</h6>
+          <h4 id="sourceCount" class="fw-bold">0</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-secondary text-white">
+        <div class="card-body">
+          <h6 class="text-white-50">Last Updated</h6>
+          <h6 id="lastUpdated" class="fw-semibold">--</h6>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters & Charts Row -->
+  <div class="row g-4 mb-4">
+    <!-- Filters Left -->
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-primary text-white">
+          <strong><i class="bi bi-funnel-fill me-1"></i>Filters</strong>
+        </div>
+        <div class="card-body">
+          <label for="severityFilter" class="form-label">Severity</label>
+          <select id="severityFilter" class="form-select mb-3" onchange="loadData()">
+            <option value="">All</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+
+          <label for="sourceFilter" class="form-label">Source</label>
+          <select id="sourceFilter" class="form-select" onchange="loadData()">
+            <option value="">All</option>
+            <option value="AbuseIPDB">AbuseIPDB</option>
+            <option value="OTX">OTX</option>
+            <option value="VirusTotal">VirusTotal</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Right -->
+    <div class="col-md-8">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-success text-white">
+          <strong><i class="bi bi-graph-up-arrow me-1"></i>Visualizations</strong>
+        </div>
+        <div class="card-body">
+          <canvas id="sourceChart" class="mb-4"></canvas>
+          <canvas id="severityChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <table class="table table-bordered table-hover">
+    <thead>
+      <tr>
+        <th>Indicator</th>
+        <th>Type</th>
+        <th>Source</th>
+        <th>Severity</th>
+        <th>Categories</th>
+        <th>Reported At</th>
+      </tr>
+    </thead>
+    <tbody id="cti-table-body"></tbody>
+  </table>
+
+  <script src="scripts.js"></script>
+</body>
+</html>
