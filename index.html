@@ -34,6 +34,18 @@
       width: 100% !important;
       max-height: 300px;
     }
+    .shimmer-wrapper {
+      display: block;
+      border-radius: 0.5rem;
+      background: linear-gradient(90deg, #eeeeee 25%, #dddddd 50%, #eeeeee 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      min-height: 150px;
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
   </style>
 </head>
 <body class="p-4">
@@ -74,7 +86,7 @@
       <div class="card shadow-sm border-0 bg-secondary text-white">
         <div class="card-body">
           <h6 class="text-white-50">Last Updated</h6>
-          <h6 id="lastUpdated" class="fw-semibold">--</h6>
+          <h4 id="lastUpdated" class="fw-bold">--</h4>
         </div>
       </div>
     </div>
@@ -98,12 +110,17 @@
           </select>
 
           <label for="sourceFilter" class="form-label">Source</label>
-          <select id="sourceFilter" class="form-select" onchange="loadData()">
+          <select id="sourceFilter" class="form-select mb-3" onchange="loadData()">
             <option value="">All</option>
             <option value="AbuseIPDB">AbuseIPDB</option>
             <option value="OTX">OTX</option>
             <option value="VirusTotal">VirusTotal</option>
           </select>
+
+          <!-- Refresh Button -->
+          <button class="btn btn-outline-primary w-100 mt-2" onclick="loadData()">
+            <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data
+          </button>
         </div>
       </div>
     </div>
@@ -122,8 +139,11 @@
     </div>
   </div>
 
+  <!-- Shimmer Placeholder -->
+  <div id="shimmer" class="shimmer-wrapper mb-4" style="display: none;"></div>
+
   <!-- Table -->
-  <table class="table table-bordered table-hover">
+  <table class="table table-bordered table-hover" style="margin-top: -1rem;">
     <thead>
       <tr>
         <th>Indicator</th>
