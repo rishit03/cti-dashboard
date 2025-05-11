@@ -18,18 +18,22 @@
       color: white;
       margin-bottom: 2rem;
     }
+
     @keyframes gradientBG {
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
     }
+
     .card:hover {
       box-shadow: 0 0 15px rgba(0, 255, 255, 0.2), 0 0 10px rgba(0, 123, 255, 0.2);
       transition: box-shadow 0.3s ease-in-out;
     }
+
     .badge[title] {
       cursor: help;
     }
+
     canvas {
       width: 100% !important;
       max-height: 300px;
@@ -41,7 +45,7 @@
   <!-- Header -->
   <div class="header-section text-center">
     <h1 class="fw-bold"><i class="bi bi-shield-lock-fill me-2"></i>Cyber Threat Intelligence Dashboard</h1>
-    <p class="text-white-50 fs-5 mb-0">Real-time indicators from OTX, AbuseIPDB, and VirusTotal</p>
+    <p class="text-white-50 fs-5 mb-0">Real-time indicators from AbuseIPDB, OTX, VirusTotal & GreyNoise</p>
   </div>
 
   <!-- Quick Stats Row -->
@@ -90,7 +94,7 @@
         </div>
         <div class="card-body">
           <label for="severityFilter" class="form-label">Severity</label>
-          <select id="severityFilter" class="form-select mb-3" onchange="loadData()">
+          <select id="severityFilter" class="form-select mb-3" onchange="saveFilters(); loadData()">
             <option value="">All</option>
             <option value="High">High</option>
             <option value="Medium">Medium</option>
@@ -98,11 +102,12 @@
           </select>
 
           <label for="sourceFilter" class="form-label">Source</label>
-          <select id="sourceFilter" class="form-select mb-3" onchange="loadData()">
+          <select id="sourceFilter" class="form-select mb-3" onchange="saveFilters(); loadData()">
             <option value="">All</option>
             <option value="AbuseIPDB">AbuseIPDB</option>
             <option value="OTX">OTX</option>
             <option value="VirusTotal">VirusTotal</option>
+            <option value="GreyNoise">GreyNoise</option>
           </select>
 
           <!-- Refresh Button -->

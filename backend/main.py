@@ -20,6 +20,7 @@ app.add_middleware(
 ABUSEIPDB_API_KEY = os.getenv("ABUSEIPDB_API_KEY")
 OTX_API_KEY = os.getenv("OTX_API_KEY")
 VT_API_KEY = os.getenv("VIRUSTOTAL_API_KEY")
+GREYNOISE_API_KEY = os.getenv("GREYNOISE_API_KEY")
 
 @app.get("/cti-data")
 async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
@@ -52,7 +53,7 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
                 continue
             normalized.append(entry)
 
-    # === OTX (Improved severity) ===
+    # === OTX ===
     if not source or source == "OTX":
         headers = {
             "X-OTX-API-KEY": OTX_API_KEY
@@ -69,8 +70,6 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
                     pulse_name = pulse.get("name", "").lower()
                     for indicator in pulse.get("indicators", []):
                         indicator_type = indicator.get("type", "").lower()
-
-                        # Inferred severity
                         if "apt" in pulse_name or "ransomware" in pulse_name:
                             severity_level = "High"
                         elif indicator_type in ["ipv4", "domain"]:
@@ -92,12 +91,12 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
         except Exception as e:
             print(f"[ERROR] OTX request failed: {e}")
 
-    # === VirusTotal (lowered thresholds) ===
+    # === VirusTotal ===
     if not source or source == "VirusTotal":
         headers = {
             "x-apikey": VT_API_KEY
         }
-        sample_ips = ["185.232.67.76", "8.8.8.8", "1.1.1.1"]  # Replace 8.8.8.8 with a real malicious IP for better testing
+        sample_ips = ["185.232.67.76", "8.8.8.8", "1.1.1.1"]
 
         async with httpx.AsyncClient(timeout=20.0) as client:
             for ip in sample_ips:
@@ -112,8 +111,6 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
                         categories = result.get("attributes", {}).get("tags", []) or []
 
                         detections = stats.get("malicious", 0) + stats.get("suspicious", 0)
-
-                        # Lowered thresholds
                         if detections >= 5:
                             severity_level = "High"
                         elif detections >= 1:
@@ -138,5 +135,45 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
                         normalized.append(entry)
                 except Exception as e:
                     print(f"[ERROR] VT IP {ip} failed: {e}")
+
+    # === GreyNoise ===
+    if not source or source == "GreyNoise":
+        headers = {
+            "key": GREYNOISE_API_KEY
+        }
+        sample_ips = ["185.232.67.76", "8.8.8.8", "1.1.1.1"]
+
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            for ip in sample_ips:
+                try:
+                    gn_response = await client.get(
+                        f"https://api.greynoise.io/v3/community/{ip}",
+                        headers=headers
+                    )
+                    if gn_response.status_code == 200:
+                        result = gn_response.json()
+                        classification = result.get("classification", "unknown")
+
+                        if classification == "malicious":
+                            severity_level = "High"
+                        elif classification == "unknown":
+                            severity_level = "Medium"
+                        else:
+                            severity_level = "Low"
+
+                        entry = {
+                            "indicator": ip,
+                            "type": "IP",
+                            "source": "GreyNoise",
+                            "severity": severity_level,
+                            "categories": [result.get("name", "Unknown")],
+                            "reported_at": "N/A"
+                        }
+
+                        if severity and entry["severity"] != severity:
+                            continue
+                        normalized.append(entry)
+                except Exception as e:
+                    print(f"[ERROR] GreyNoise IP {ip} failed: {e}")
 
     return {"data": normalized}

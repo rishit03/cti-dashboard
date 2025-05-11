@@ -1,4 +1,8 @@
 function loadData() {
+  // Restore selected filters from localStorage
+  document.getElementById("severityFilter").value = localStorage.getItem("selectedSeverity") || "";
+  document.getElementById("sourceFilter").value = localStorage.getItem("selectedSource") || "";
+
   const severity = document.getElementById("severityFilter").value;
   const source = document.getElementById("sourceFilter").value;
   const url = new URL("https://cti-dashboard-9j95.onrender.com/cti-data");
@@ -9,12 +13,13 @@ function loadData() {
   const spinner = document.getElementById("loadingSpinner");
   const chartCard = document.getElementById("chartCard");
 
-  // Show loading spinner, hide content
   spinner.style.display = "block";
   chartCard.style.display = "none";
   tbody.style.display = "none";
 
-  // Clear previous charts
+  if (severity) url.searchParams.append("severity", severity);
+  if (source) url.searchParams.append("source", source);
+
   if (window.sourceChartInstance) window.sourceChartInstance.destroy();
   if (window.severityChartInstance) window.severityChartInstance.destroy();
 
@@ -64,10 +69,10 @@ function loadData() {
         severityCount[entry.severity] = (severityCount[entry.severity] || 0) + 1;
       });
 
-      // Update Stats
       const total = data.data.length;
       const highSeverity = data.data.filter(d => d.severity === "High").length;
       const uniqueSources = new Set(data.data.map(d => d.source)).size;
+
       updateStats(total, highSeverity, uniqueSources);
 
       // Pie Chart
@@ -151,6 +156,12 @@ function loadData() {
       tbody.innerHTML = "<tr><td colspan='6' class='text-center text-danger'>Failed to load data</td></tr>";
       updateStats(0, 0, 0);
     });
+}
+
+// Save filters to localStorage
+function saveFilters() {
+  localStorage.setItem("selectedSeverity", document.getElementById("severityFilter").value);
+  localStorage.setItem("selectedSource", document.getElementById("sourceFilter").value);
 }
 
 function updateStats(total, high, sources) {
