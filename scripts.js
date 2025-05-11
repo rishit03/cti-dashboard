@@ -8,7 +8,7 @@ function loadData() {
 
   const severity = document.getElementById("severityFilter").value;
   const source = document.getElementById("sourceFilter").value;
-  const url = new URL("http://localhost:8000/cti-data");
+  const url = new URL("https://cti-dashboard-9j95.onrender.com/cti-data");
 
   const tbody = document.getElementById("cti-table-body");
   const chartCanvas = document.getElementById("sourceChart");
