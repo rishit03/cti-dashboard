@@ -34,18 +34,6 @@
       width: 100% !important;
       max-height: 300px;
     }
-    .shimmer-wrapper {
-      display: block;
-      border-radius: 0.5rem;
-      background: linear-gradient(90deg, #eeeeee 25%, #dddddd 50%, #eeeeee 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-      min-height: 150px;
-    }
-    @keyframes shimmer {
-      0% { background-position: -200% 0; }
-      100% { background-position: 200% 0; }
-    }
   </style>
 </head>
 <body class="p-4">
@@ -126,7 +114,7 @@
     </div>
 
     <!-- Charts Right -->
-    <div class="col-md-8">
+    <div class="col-md-8" id="chartCard">
       <div class="card shadow-sm h-100">
         <div class="card-header bg-success text-white">
           <strong><i class="bi bi-graph-up-arrow me-1"></i>Visualizations</strong>
@@ -139,8 +127,11 @@
     </div>
   </div>
 
-  <!-- Shimmer Placeholder -->
-  <div id="shimmer" class="shimmer-wrapper mb-4" style="display: none;"></div>
+  <!-- Loading Spinner -->
+  <div id="loadingSpinner" class="text-center mb-4" style="display: none;">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="mt-2">Loading threat data...</p>
+  </div>
 
   <!-- Table -->
   <table class="table table-bordered table-hover" style="margin-top: -1rem;">

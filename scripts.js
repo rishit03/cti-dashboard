@@ -3,25 +3,26 @@ function loadData() {
   const source = document.getElementById("sourceFilter").value;
   const url = new URL("https://cti-dashboard-9j95.onrender.com/cti-data");
 
-  if (severity) url.searchParams.append("severity", severity);
-  if (source) url.searchParams.append("source", source);
-
   const tbody = document.getElementById("cti-table-body");
   const chartCanvas = document.getElementById("sourceChart");
   const severityCanvas = document.getElementById("severityChart");
-  const shimmer = document.getElementById("shimmer");
+  const spinner = document.getElementById("loadingSpinner");
+  const chartCard = document.getElementById("chartCard");
 
-  // Show shimmer, hide table
-  shimmer.style.display = "block";
+  // Show loading spinner, hide content
+  spinner.style.display = "block";
+  chartCard.style.display = "none";
   tbody.style.display = "none";
 
+  // Clear previous charts
   if (window.sourceChartInstance) window.sourceChartInstance.destroy();
   if (window.severityChartInstance) window.severityChartInstance.destroy();
 
   fetch(url)
     .then(res => res.json())
     .then(data => {
-      shimmer.style.display = "none";
+      spinner.style.display = "none";
+      chartCard.style.display = "block";
       tbody.style.display = "table-row-group";
 
       if (!data || !Array.isArray(data.data) || data.data.length === 0) {
@@ -63,7 +64,7 @@ function loadData() {
         severityCount[entry.severity] = (severityCount[entry.severity] || 0) + 1;
       });
 
-      // Stats
+      // Update Stats
       const total = data.data.length;
       const highSeverity = data.data.filter(d => d.severity === "High").length;
       const uniqueSources = new Set(data.data.map(d => d.source)).size;
@@ -82,15 +83,10 @@ function loadData() {
           }]
         },
         options: {
-          animation: {
-            duration: 1000,
-            easing: "easeOutQuart"
-          },
+          animation: { duration: 1000, easing: "easeOutQuart" },
           plugins: {
             legend: {
-              labels: {
-                color: "#000"
-              }
+              labels: { color: "#000" }
             }
           }
         }
@@ -118,10 +114,7 @@ function loadData() {
           }]
         },
         options: {
-          animation: {
-            duration: 1000,
-            easing: "easeOutQuart"
-          },
+          animation: { duration: 1000, easing: "easeOutQuart" },
           responsive: true,
           plugins: {
             legend: { display: false }
@@ -151,9 +144,10 @@ function loadData() {
       });
     })
     .catch(error => {
-      shimmer.style.display = "none";
-      tbody.style.display = "table-row-group";
       console.error("Error fetching CTI data:", error);
+      spinner.style.display = "none";
+      chartCard.style.display = "block";
+      tbody.style.display = "table-row-group";
       tbody.innerHTML = "<tr><td colspan='6' class='text-center text-danger'>Failed to load data</td></tr>";
       updateStats(0, 0, 0);
     });
