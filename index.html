@@ -19,6 +19,24 @@
       margin-bottom: 2rem;
     }
 
+    .indicator-row:hover {
+      background-color: rgba(13, 110, 253, 0.05); /* Light blue hover */
+    }
+
+    .details-row td {
+      background-color: var(--bs-light);
+      color: var(--bs-dark);
+    }
+
+    body.bg-dark .details-row td {
+      background-color: #343a40;
+      color: #f8f9fa;
+    }
+
+    .toggle-icon {
+      transition: transform 0.2s ease;
+    }
+
     @keyframes gradientBG {
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
@@ -28,6 +46,12 @@
     .card:hover {
       box-shadow: 0 0 15px rgba(0, 255, 255, 0.2), 0 0 10px rgba(0, 123, 255, 0.2);
       transition: box-shadow 0.3s ease-in-out;
+    }
+
+    .form-switch {
+      position: absolute;
+      top: 20px;
+      right: 30px;
     }
 
     .badge[title] {
@@ -43,50 +67,62 @@
 <body class="p-4">
 
   <!-- Header -->
-  <div class="header-section text-center">
+  <div class="header-section text-center position-relative">
     <h1 class="fw-bold"><i class="bi bi-shield-lock-fill me-2"></i>Cyber Threat Intelligence Dashboard</h1>
-    <p class="text-white-50 fs-5 mb-0">Real-time indicators from AbuseIPDB, OTX, VirusTotal & GreyNoise</p>
+    <p class="text-white-50 fs-5 mb-0">Real-time indicators from AbuseIPDB, OTX, VirusTotal, GreyNoise & MalwareBazaar</p>
+
+    <!-- Theme Toggle with Icon -->
+    <div class="form-check form-switch text-end">
+      <input class="form-check-input" type="checkbox" id="themeToggle" onchange="toggleTheme()">
+      <label class="form-check-label text-white" for="themeToggle">
+        <i id="themeIcon" class="bi bi-sun-fill"></i>
+      </label>
+    </div>
   </div>
 
-  <!-- Quick Stats Row -->
+  <!-- Stats Row -->
   <div class="row g-3 mb-4 text-center" id="statsRow">
     <div class="col-md-3">
-      <div class="card shadow-sm border-0 bg-light">
+      <div class="card shadow-sm border-0" id="cardTotal">
         <div class="card-body">
-          <h6 class="text-muted">Total Indicators</h6>
+          <h6>Total Indicators</h6>
           <h4 id="totalCount" class="fw-bold">0</h4>
         </div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card shadow-sm border-0 bg-danger text-white">
+      <div class="card shadow-sm border-0" id="cardHigh">
         <div class="card-body">
-          <h6 class="text-white-50">High Severity</h6>
+          <h6>High Severity</h6>
           <h4 id="highCount" class="fw-bold">0</h4>
         </div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card shadow-sm border-0 bg-info text-white">
+      <div class="card shadow-sm border-0" id="cardSource">
         <div class="card-body">
-          <h6 class="text-white-50">Sources</h6>
+          <h6>Sources</h6>
           <h4 id="sourceCount" class="fw-bold">0</h4>
         </div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card shadow-sm border-0 bg-secondary text-white">
-        <div class="card-body">
-          <h6 class="text-white-50">Last Updated</h6>
+      <div class="card shadow-sm border-0" id="cardUpdated">
+        <div class="card-body position-relative">
+          <!-- Refresh Icon -->
+          <button class="btn btn-sm btn-light position-absolute top-0 end-0 m-2" onclick="loadData()" title="Refresh">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+    
+          <h6>Last Updated</h6>
           <h4 id="lastUpdated" class="fw-bold">--</h4>
         </div>
       </div>
-    </div>
+    </div>    
   </div>
 
   <!-- Filters & Charts Row -->
   <div class="row g-4 mb-4">
-    <!-- Filters Left -->
     <div class="col-md-4">
       <div class="card shadow-sm h-100">
         <div class="card-header bg-primary text-white">
@@ -108,17 +144,15 @@
             <option value="OTX">OTX</option>
             <option value="VirusTotal">VirusTotal</option>
             <option value="GreyNoise">GreyNoise</option>
+            <option value="MalwareBazaar">MalwareBazaar</option>
           </select>
 
-          <!-- Refresh Button -->
-          <button class="btn btn-outline-primary w-100 mt-2" onclick="loadData()">
-            <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data
-          </button>
+          
         </div>
       </div>
     </div>
 
-    <!-- Charts Right -->
+    <!-- Charts -->
     <div class="col-md-8" id="chartCard">
       <div class="card shadow-sm h-100">
         <div class="card-header bg-success text-white">
@@ -143,14 +177,11 @@
     <thead>
       <tr>
         <th>Indicator</th>
-        <th>Type</th>
-        <th>Source</th>
         <th>Severity</th>
-        <th>Categories</th>
-        <th>Reported At</th>
+        <th>Source</th>
       </tr>
     </thead>
-    <tbody id="cti-table-body"></tbody>
+    <tbody id="cti-table-body"></tbody>    
   </table>
 
   <script src="scripts.js"></script>

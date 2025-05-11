@@ -1,11 +1,14 @@
+let refreshInterval = null;
+let countdown = 30;
+let countdownTimer = null;
+
 function loadData() {
-  // Restore selected filters from localStorage
   document.getElementById("severityFilter").value = localStorage.getItem("selectedSeverity") || "";
   document.getElementById("sourceFilter").value = localStorage.getItem("selectedSource") || "";
 
   const severity = document.getElementById("severityFilter").value;
   const source = document.getElementById("sourceFilter").value;
-  const url = new URL("https://cti-dashboard-9j95.onrender.com/cti-data");
+  const url = new URL("http://localhost:8000/cti-data");
 
   const tbody = document.getElementById("cti-table-body");
   const chartCanvas = document.getElementById("sourceChart");
@@ -42,6 +45,12 @@ function loadData() {
         return;
       }
 
+      const isDark = localStorage.getItem("theme") === "dark";
+      const labelColor = isDark ? "#ffffff" : "#000000";
+      const bgColors = isDark
+        ? ["#ff6384", "#36a2eb", "#ffcd56", "#4bc0c0", "#9966ff"]
+        : ["#dc3545", "#ffc107", "#0d6efd", "#20c997", "#6f42c1"];
+
       const sourceCount = {};
       const severityCount = {};
       tbody.innerHTML = "";
@@ -55,15 +64,35 @@ function loadData() {
           Low: `<span class='badge bg-info text-dark' title='Low: Few or no detections'><i class='bi bi-info-circle me-1'></i>Low</span>`
         }[entry.severity] || `<span class='badge bg-secondary'>Unknown</span>`;
 
+        const detailsRowId = `details-${entry.indicator.replace(/[^a-zA-Z0-9]/g, "")}`;
+        row.classList.add("indicator-row");
         row.innerHTML = `
-          <td>${entry.indicator}</td>
-          <td>${entry.type}</td>
-          <td>${entry.source}</td>
+          <td class="fw-bold text-decoration-underline" style="cursor:pointer;" onclick="toggleDetails('${detailsRowId}', this)">
+            <i class="bi bi-chevron-right me-1 toggle-icon"></i>${entry.indicator}
+          </td>
           <td>${severityBadge}</td>
-          <td>${entry.categories.join(", ")}</td>
-          <td>${entry.reported_at}</td>
+          <td>${entry.source}</td>
         `;
+
         tbody.appendChild(row);
+
+        // Add hidden details row
+        const detailsRow = document.createElement("tr");
+        detailsRow.id = detailsRowId;
+        detailsRow.classList.add("details-row");
+        detailsRow.style.display = "none";
+        detailsRow.innerHTML = `
+          <td colspan="3">
+            <div class="p-2 rounded bg-light-subtle text-dark-subtle border small fw-normal">
+              <strong>Type:</strong> ${entry.type} <br/>
+              <strong>Categories:</strong> ${entry.categories.join(", ")} <br/>
+              <strong>Reported At:</strong> ${entry.reported_at}
+            </div>
+          </td>
+        `;
+        tbody.appendChild(detailsRow);
+
+
 
         sourceCount[entry.source] = (sourceCount[entry.source] || 0) + 1;
         severityCount[entry.severity] = (severityCount[entry.severity] || 0) + 1;
@@ -76,39 +105,33 @@ function loadData() {
       updateStats(total, highSeverity, uniqueSources);
 
       // Pie Chart
-      const ctxPie = chartCanvas.getContext("2d");
-      window.sourceChartInstance = new Chart(ctxPie, {
+      window.sourceChartInstance = new Chart(chartCanvas.getContext("2d"), {
         type: "pie",
         data: {
           labels: Object.keys(sourceCount),
           datasets: [{
             label: "Threats by Source",
             data: Object.values(sourceCount),
-            backgroundColor: ["#dc3545", "#ffc107", "#0d6efd", "#20c997"]
+            backgroundColor: bgColors
           }]
         },
         options: {
           animation: { duration: 1000, easing: "easeOutQuart" },
           plugins: {
-            legend: {
-              labels: { color: "#000" }
-            }
+            legend: { labels: { color: labelColor } }
           }
         }
       });
 
       // Bar Chart
-      const ctxBar = severityCanvas.getContext("2d");
       const orderedSeverities = ["High", "Medium", "Low"];
       const barLabels = orderedSeverities.filter(s => severityCount[s] !== undefined);
       const barData = barLabels.map(s => severityCount[s]);
       const barColors = barLabels.map(level =>
-        level === "High" ? "#dc3545" :
-        level === "Medium" ? "#ffc107" :
-        "#0d6efd"
+        level === "High" ? "#dc3545" : level === "Medium" ? "#ffc107" : "#0d6efd"
       );
 
-      window.severityChartInstance = new Chart(ctxBar, {
+      window.severityChartInstance = new Chart(severityCanvas.getContext("2d"), {
         type: "bar",
         data: {
           labels: barLabels,
@@ -121,26 +144,24 @@ function loadData() {
         options: {
           animation: { duration: 1000, easing: "easeOutQuart" },
           responsive: true,
-          plugins: {
-            legend: { display: false }
-          },
+          plugins: { legend: { display: false } },
           scales: {
             y: {
               beginAtZero: true,
-              ticks: { stepSize: 1, color: "#000" },
+              ticks: { stepSize: 1, color: labelColor },
               title: {
                 display: true,
                 text: "Number of Indicators",
-                color: "#000",
+                color: labelColor,
                 font: { size: 14, weight: "bold" }
               }
             },
             x: {
-              ticks: { color: "#000" },
+              ticks: { color: labelColor },
               title: {
                 display: true,
                 text: "Severity Level",
-                color: "#000",
+                color: labelColor,
                 font: { size: 14, weight: "bold" }
               }
             }
@@ -158,7 +179,30 @@ function loadData() {
     });
 }
 
-// Save filters to localStorage
+function toggleAutoRefresh() {
+  const toggle = document.getElementById("autoRefreshToggle");
+  const timerDisplay = document.getElementById("countdownTimer");
+
+  if (toggle.checked) {
+    countdown = 30;
+    timerDisplay.style.display = "block";
+    timerDisplay.textContent = `Refreshing in: ${countdown}s`;
+
+    countdownTimer = setInterval(() => {
+      countdown--;
+      timerDisplay.textContent = `Refreshing in: ${countdown}s`;
+      if (countdown <= 0) {
+        loadData();
+        countdown = 30;
+        timerDisplay.textContent = `Refreshing in: ${countdown}s`;
+      }
+    }, 1000);
+  } else {
+    clearInterval(countdownTimer);
+    timerDisplay.style.display = "none";
+  }
+}
+
 function saveFilters() {
   localStorage.setItem("selectedSeverity", document.getElementById("severityFilter").value);
   localStorage.setItem("selectedSource", document.getElementById("sourceFilter").value);
@@ -176,4 +220,61 @@ function updateStats(total, high, sources) {
   if (!sourceCounter.error) sourceCounter.start(); else document.getElementById("sourceCount").textContent = sources;
 }
 
+function toggleTheme() {
+  const dark = document.getElementById("themeToggle").checked;
+  localStorage.setItem("theme", dark ? "dark" : "light");
+  applyTheme();
+  loadData();
+}
+
+function applyTheme() {
+  const isDark = localStorage.getItem("theme") === "dark";
+  document.getElementById("themeToggle").checked = isDark;
+
+  document.body.classList.toggle("bg-dark", isDark);
+  document.body.classList.toggle("text-light", isDark);
+
+  document.querySelectorAll("table").forEach(tbl =>
+    tbl.classList.toggle("table-dark", isDark)
+  );
+
+  document.querySelectorAll(".card").forEach(card => {
+    card.classList.remove("bg-light", "bg-dark", "text-light", "text-white");
+    if (isDark) {
+      card.classList.add("bg-dark", "text-white");
+    } else {
+      card.classList.add("bg-light", "text-dark");
+    }
+  });
+
+  // Specific colors for stat cards
+  document.getElementById("cardTotal").className =
+    "card shadow-sm border-0 " + (isDark ? "bg-primary text-white" : "bg-primary text-white");
+  document.getElementById("cardHigh").className =
+    "card shadow-sm border-0 " + (isDark ? "bg-danger text-white" : "bg-danger text-white");
+  document.getElementById("cardSource").className =
+    "card shadow-sm border-0 " + (isDark ? "bg-info text-white" : "bg-info text-white");
+  document.getElementById("cardUpdated").className =
+    "card shadow-sm border-0 " + (isDark ? "bg-secondary text-white" : "bg-dark text-white");
+
+  document.getElementById("themeIcon").className = isDark ? "bi bi-moon-fill" : "bi bi-sun-fill";
+}
+
+function toggleDetails(id, cell) {
+  const row = document.getElementById(id);
+  const icon = cell.querySelector(".toggle-icon");
+  if (row.style.display === "none") {
+    row.style.display = "table-row";
+    icon.classList.remove("bi-chevron-right");
+    icon.classList.add("bi-chevron-down");
+  } else {
+    row.style.display = "none";
+    icon.classList.remove("bi-chevron-down");
+    icon.classList.add("bi-chevron-right");
+  }
+}
+
+
+
+applyTheme();
 loadData();

@@ -2,6 +2,7 @@ from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import os
+import traceback
 from dotenv import load_dotenv
 from datetime import datetime
 
@@ -136,7 +137,7 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
                 except Exception as e:
                     print(f"[ERROR] VT IP {ip} failed: {e}")
 
-    # === GreyNoise (with better test IPs) ===
+    # === GreyNoise ===
     if not source or source == "GreyNoise":
         headers = {
             "key": GREYNOISE_API_KEY
@@ -181,5 +182,51 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
                         normalized.append(entry)
                 except Exception as e:
                     print(f"[ERROR] GreyNoise IP {ip} failed: {e}")
+
+    # === MalwareBazaar (Multi-tag: exe, stealer, ransomware)
+    if not source or source == "MalwareBazaar":
+        try:
+            tags = ["exe", "stealer", "ransomware"]
+            async with httpx.AsyncClient(timeout=40.0) as client:
+                for tag in tags:
+                    response = await client.post(
+                        "https://mb-api.abuse.ch/api/v1/",
+                        headers={"Content-Type": "application/x-www-form-urlencoded"},
+                        data={"query": "get_taginfo", "tag": tag}
+                    )
+                    if response.status_code == 200:
+                        results = response.json().get("data", [])
+                        print(f"📦 MalwareBazaar [{tag}] returned:", len(results), "items")
+
+                        for item in results[:7]:
+                            tags = item.get("tags", []) or []
+                            signature = (item.get("signature") or "").lower()
+
+                            # Custom severity logic
+                            if "ransomware" in tags or "ransom" in signature:
+                                severity_level = "High"
+                            elif "stealer" in tags or "trojan" in signature:
+                                severity_level = "Medium"
+                            else:
+                                severity_level = "Low"
+
+                            entry = {
+                                "indicator": item.get("sha256_hash"),
+                                "type": "Hash",
+                                "source": "MalwareBazaar",
+                                "severity": severity_level,
+                                "categories": tags + [signature] if signature else tags,
+                                "reported_at": item.get("first_seen", "N/A")
+                            }
+
+                            if severity and entry["severity"] != severity:
+                                continue
+                            normalized.append(entry)
+
+                    else:
+                        print(f"[ERROR] MalwareBazaar [{tag}] HTTP {response.status_code}: {response.text}")
+        except Exception:
+            print("[ERROR] MalwareBazaar request failed:")
+            traceback.print_exc()
 
     return {"data": normalized}

@@ -1,3 +1,4 @@
+
 # 🛡️ Cyber Threat Intelligence Dashboard
 
 A full-stack web application that fetches and visualizes real-time threat indicators from multiple public CTI sources. Built for the AppSec Intern Assessment at Asquare Ideas.
@@ -10,6 +11,8 @@ A full-stack web application that fetches and visualizes real-time threat indica
   - **AbuseIPDB** — blacklisted IPs with confidence scores
   - **OTX (AlienVault)** — indicators from subscribed pulses
   - **VirusTotal** — IP threat intelligence from reputation scores
+  - **GreyNoise** — classification of internet background noise
+  - **MalwareBazaar** — malware hashes and tags with inferred severity
 - ✅ Normalizes all data into a unified structure
 - ✅ Supports filtering by severity and source
 - ✅ Visualizes data with:
@@ -20,7 +23,12 @@ A full-stack web application that fetches and visualizes real-time threat indica
   - High severity
   - Unique sources
   - Last updated time
-- ✅ Modern, responsive frontend with tooltips and hover effects
+- ✅ Built-in refresh + auto-refresh (30s) toggle in Last Updated card
+- ✅ Expandable row table:
+  - Compact view shows Indicator, Severity, Source
+  - Clicking on an Indicator reveals Type, Categories, Reported At
+- ✅ Dark & light mode toggle with sun/moon icon
+- ✅ Tooltip-enabled UI with clean spacing and mobile support
 - ✅ No user login or database required
 
 ---
@@ -33,6 +41,8 @@ A full-stack web application that fetches and visualizes real-time threat indica
   - [AbuseIPDB](https://www.abuseipdb.com/)
   - [AlienVault OTX](https://otx.alienvault.com/)
   - [VirusTotal](https://www.virustotal.com/)
+  - [GreyNoise](https://www.greynoise.io/)
+  - [MalwareBazaar](https://bazaar.abuse.ch/)
 
 ---
 
@@ -45,51 +55,40 @@ git clone https://github.com/yourusername/cti-dashboard.git
 cd cti-dashboard
 ```
 
-### 2. Add API keys to `.env` (inside `/backend` folder)
+### 2. Add API keys to `.env`
 
-**Important:** Do not commit your real `.env` file. Instead, use the provided `.env.example` as a template.
-
-**On Render:**
-- You must manually add the same variables to the *Environment Variables* section in your Render web service settings.
-
-**Locally:**
-- Copy `.env.example` to `.env`
-- Paste your actual keys into `.env`
-
-
-Create a file named `.env` and paste in your API keys:
+Use the `.env.example` template and add the following:
 
 ```
 ABUSEIPDB_API_KEY=your_abuseipdb_key
 OTX_API_KEY=your_otx_key
 VIRUSTOTAL_API_KEY=your_virustotal_key
+GREYNOISE_API_KEY=your_greynoise_key
 ```
 
 ### 3. Install dependencies and start the backend
 
 ```bash
-cd backend
 pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
-By default, the API will be available at `http://localhost:8000/cti-data`.
+API available at:  
+`http://localhost:8000/cti-data`
 
 ### 4. Open the frontend
 
-Simply open `index.html` in a browser (Chrome/Edge recommended).
-
-Make sure the backend is running.
+Just open `index.html` in a browser.
 
 ---
 
 ## 📝 Notes
 
-- The **VirusTotal** integration uses a small hardcoded list of test IPs.
-- The **OTX** section only returns data if you're subscribed to pulses.
-- **AbuseIPDB** is limited to 1000 requests/day on the free tier.
-- No login, user auth, or persistent database is required or included.
-- Layout is responsive and adjusts across devices.
+- **MalwareBazaar** entries use tag and signature heuristics to assign severity.
+- Clicking an indicator row expands to show hidden details.
+- The layout is mobile-friendly and supports light/dark themes.
+- You can manually refresh or enable auto-refresh in the stats card.
+- VirusTotal and OTX may return limited results based on API tier/subscription.
 
 ---
 
