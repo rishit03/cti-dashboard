@@ -9,10 +9,29 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/1.9.3/countUp.min.js"></script>
   <style>
+    body.bg-dark .card {
+      border: 1px solid #495057 !important;
+    }
+
+    body.bg-dark .card-header {
+      border-bottom: 1px solid #495057;
+    }
+
     #paginationControls button {
       min-width: 40px;
       font-weight: 500;
       transition: background-color 0.2s ease;
+    }
+
+    body.bg-dark #paginationControls .btn-outline-primary {
+      border-color: #6c757d;
+      color: #dee2e6;
+    }
+
+    body.bg-dark #paginationControls .btn-outline-primary:hover {
+      background-color: #0d6efd;
+      color: white;
+      border-color: #0d6efd;
     }
 
     #paginationControls .btn-outline-primary:hover {
@@ -108,7 +127,7 @@
     <p class="text-white-50 fs-5 mb-0">
       Real-time indicators from AbuseIPDB, OTX, VirusTotal & MalwareBazaar
     </p>
-        
+
     <!-- Theme Toggle with Icon -->
     <div class="form-check form-switch text-end">
       <input class="form-check-input" type="checkbox" id="themeToggle" onchange="toggleTheme()">
@@ -248,13 +267,18 @@
   </table>
 
   <!-- Pagination Controls -->
-<div id="paginationControls" class="mt-3 d-flex flex-wrap gap-1 justify-content-center"></div>
-<div id="pageIndicator" class="text-center mt-2 small text-muted"></div>
-<div class="mt-2 text-center">
-  <label for="jumpPage" class="form-label small me-2">Jump to page:</label>
-  <input type="number" id="jumpPage" min="1" style="width: 70px;" class="form-control d-inline-block" />
-  <button onclick="jumpToPage()" class="btn btn-sm btn-outline-primary ms-1">Go</button>
-</div>
+  <div class="card mt-3 border-0 shadow-sm">
+    <div class="card-body p-3">
+      <div id="paginationControls" class="d-flex flex-wrap gap-2 justify-content-center"></div>
+      <div id="pageIndicator" class="text-center mt-2 small text-muted"></div>
+    </div>
+  </div>
+  
+  <div class="mt-2 text-center">
+    <label for="jumpPage" class="form-label small me-2">Jump to page:</label>
+    <input type="number" id="jumpPage" min="1" style="width: 70px;" class="form-control d-inline-block" />
+    <button onclick="jumpToPage()" class="btn btn-sm btn-outline-primary ms-1">Go</button>
+  </div>
 
 
   <!-- Bootstrap Toast for API errors -->
