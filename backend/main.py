@@ -37,40 +37,39 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
         }
         try:
             async with httpx.AsyncClient(timeout=20.0) as client:
-                abuseipdb_response = await client.get(
+                response = await client.get(
                     "https://api.abuseipdb.com/api/v2/blacklist",
                     params={"confidenceMinimum": 25},
                     headers=headers
                 )
 
-            if abuseipdb_response.status_code == 429:
+            if response.status_code == 429:
                 print("[ERROR] AbuseIPDB rate limit reached")
                 errors.append("AbuseIPDB")
-
-            if abuseipdb_response.status_code != 200:
-                print(f"[ERROR] AbuseIPDB returned {abuseipdb_response.status_code}")
+            elif response.status_code != 200:
+                print(f"[ERROR] AbuseIPDB returned {response.status_code}")
                 errors.append("AbuseIPDB")
-                
+            else:
+                abuse_data = response.json()
+                for item in abuse_data.get("data", []):
+                    severity_level = "High" if item.get("abuseConfidenceScore", 0) > 75 else "Medium"
+                    entry = {
+                        "indicator": item.get("ipAddress"),
+                        "type": "IP",
+                        "source": "AbuseIPDB",
+                        "severity": severity_level,
+                        "categories": ["Blacklisted"],
+                        "reported_at": "N/A"
+                    }
+                    if severity and entry["severity"] != severity:
+                        continue
+                    normalized.append(entry)
 
-            abuse_data = abuseipdb_response.json()
-
-            for item in abuse_data.get("data", []):
-                severity_level = "High" if item.get("abuseConfidenceScore", 0) > 75 else "Medium"
-                entry = {
-                    "indicator": item.get("ipAddress"),
-                    "type": "IP",
-                    "source": "AbuseIPDB",
-                    "severity": severity_level,
-                    "categories": ["Blacklisted"],
-                    "reported_at": "N/A"
-                }
-                if severity and entry["severity"] != severity:
-                    continue
-                normalized.append(entry)
         except Exception:
             print("[ERROR] AbuseIPDB request failed:")
             traceback.print_exc()
             errors.append("AbuseIPDB")
+
 
     # === OTX ===
     if not source or source == "OTX":
