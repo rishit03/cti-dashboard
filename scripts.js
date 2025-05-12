@@ -384,7 +384,7 @@ function updateStats(total, high, sources) {
         // Ensure startVal is read from the element's current textContent before CountUp modifies it
         const currentVal = parseInt(element.textContent);
         const startVal = isNaN(currentVal) ? 0 : currentVal;
-        new CountUp(element, endVal, { duration: 1.5, useEasing: true, startVal }).start();
+        new window.CountUp(element, endVal, { duration: 1.5, useEasing: true, startVal }).start();
       }
     };
     createCountUpInstance(totalCountEl, total);
