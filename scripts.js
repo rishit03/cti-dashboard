@@ -49,9 +49,12 @@ function loadData() {
         severityCount[entry.severity] = (severityCount[entry.severity] || 0) + 1;
       });
 
-      updateStats(data.data.length, data.data.filter(d => d.severity === "High").length, new Set(data.data.map(d => d.source)).size);
+      updateStats(
+        data.data.length,
+        data.data.filter(d => d.severity === "High").length,
+        new Set(data.data.map(d => d.source)).size
+      );
 
-      // Pie chart
       window.sourceChartInstance = new Chart(document.getElementById("sourceChart").getContext("2d"), {
         type: "pie",
         data: {
@@ -68,22 +71,16 @@ function loadData() {
         }
       });
 
-      // Bar chart
-      const orderedSeverities = ["High", "Medium", "Low"];
-      const barLabels = orderedSeverities.filter(s => severityCount[s] !== undefined);
-      const barData = barLabels.map(s => severityCount[s]);
-      const barColors = barLabels.map(level =>
-        level === "High" ? "#dc3545" : level === "Medium" ? "#ffc107" : "#0d6efd"
-      );
-
       window.severityChartInstance = new Chart(document.getElementById("severityChart").getContext("2d"), {
         type: "bar",
         data: {
-          labels: barLabels,
+          labels: Object.keys(severityCount),
           datasets: [{
             label: "Indicators by Severity",
-            data: barData,
-            backgroundColor: barColors
+            data: Object.values(severityCount),
+            backgroundColor: Object.keys(severityCount).map(level =>
+              level === "High" ? "#dc3545" : level === "Medium" ? "#ffc107" : "#0d6efd"
+            )
           }]
         },
         options: {
@@ -114,7 +111,6 @@ function loadData() {
         }
       });
 
-      // Show toast if source errors occurred
       if (data.errors && data.errors.length > 0) {
         const msg = `⚠️ The following sources failed or hit limits: ${data.errors.join(", ")}`;
         document.getElementById("toastMessage").textContent = msg;
@@ -140,7 +136,6 @@ function renderTablePage() {
   const start = (currentPage - 1) * rowsPerPage;
   const end = start + rowsPerPage;
   const pageData = allCTIData.slice(start, end);
-
   const isDark = localStorage.getItem("theme") === "dark";
 
   pageData.forEach(entry => {
@@ -177,7 +172,6 @@ function renderTablePage() {
   });
 
   const totalPages = Math.ceil(allCTIData.length / rowsPerPage);
-  if (totalPages <= 1) return;
 
   const createPageBtn = (label, page, active = false, disabled = false) => {
     const btn = document.createElement("button");
@@ -203,6 +197,7 @@ function renderTablePage() {
     }
   }
   pagination.appendChild(createPageBtn("Last »", totalPages, false, currentPage === totalPages));
+
   const pageIndicator = document.getElementById("pageIndicator");
   pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
 }
@@ -273,13 +268,14 @@ function applyTheme() {
   document.body.classList.toggle("text-light", isDark);
 
   document.querySelectorAll("table").forEach(tbl => tbl.classList.toggle("table-dark", isDark));
+
   document.querySelectorAll(".card").forEach(card => {
-    card.classList.remove("bg-light", "bg-dark", "text-light", "text-white");
+    card.classList.remove("bg-light", "bg-dark", "text-light", "text-white", "text-dark");
     if (isDark) {
       card.classList.add("bg-dark", "text-white");
     } else {
       card.classList.add("bg-light", "text-dark");
-    }    
+    }
   });
 
   document.getElementById("cardTotal").className = "card shadow-sm border-0 " + (isDark ? "bg-primary text-white" : "bg-primary text-white");
@@ -300,9 +296,6 @@ function jumpToPage() {
   renderTablePage();
 }
 
-applyTheme();
-loadData();
-
 document.addEventListener("keydown", (e) => {
   if (!allCTIData.length) return;
   const totalPages = Math.ceil(allCTIData.length / rowsPerPage);
@@ -314,3 +307,6 @@ document.addEventListener("keydown", (e) => {
     renderTablePage();
   }
 });
+
+applyTheme();
+loadData();
