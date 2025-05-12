@@ -321,21 +321,26 @@ function lookupVTIp() {
 
   fetch(`https://cti-dashboard-9j95.onrender.com/vt-lookup?ip=${ip}`)
     .then(res => res.json())
-    .then(data => {
-      if (data.error) {
-        resultBox.innerHTML = `<div class='text-danger'>❌ ${data.error}</div>`;
+    .then(async res => {
+      const data = await res.json();
+      
+      if (!res.ok) {
+        resultBox.innerHTML = `<div class='text-danger'>❌ ${data.detail || "Invalid input or blocked by VirusTotal."}</div>`;
         return;
       }
-
+    
       resultBox.innerHTML = `
         <div><strong>IP:</strong> ${ip}</div>
         <div><strong>Malicious:</strong> ${data.malicious}</div>
         <div><strong>Suspicious:</strong> ${data.suspicious}</div>
         <div><strong>Last Seen:</strong> ${data.last_analysis}</div>
         <div><strong>Tags:</strong> ${data.tags.join(", ")}</div>
-        <div class="mt-2"><a href="https://www.virustotal.com/gui/ip-address/${ip}" target="_blank" class="btn btn-sm btn-outline-secondary">View on VirusTotal</a></div>
+        <div class="mt-2">
+          <a href="https://www.virustotal.com/gui/ip-address/${ip}" target="_blank" class="btn btn-sm btn-outline-secondary">View on VirusTotal</a>
+        </div>
       `;
     })
+    
     .catch(err => {
       console.error(err);
       resultBox.innerHTML = "<div class='text-danger'>⚠️ Failed to fetch data from backend.</div>";

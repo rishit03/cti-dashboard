@@ -6,6 +6,7 @@ import traceback
 from dotenv import load_dotenv
 from datetime import datetime
 import re
+import ipaddress
 
 load_dotenv()
 
@@ -193,7 +194,11 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
 # === VirusTotal Real-Time IP Lookup Endpoint ===
 
 def is_valid_ip(ip: str) -> bool:
-    return re.match(r"^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", ip) is not None
+    try:
+        ip_obj = ipaddress.ip_address(ip)
+        return not ip_obj.is_private
+    except ValueError:
+        return False
 
 @app.get("/vt-lookup")
 async def vt_lookup(ip: str):
