@@ -8,7 +8,7 @@ function loadData() {
 
   const severity = document.getElementById("severityFilter").value;
   const source = document.getElementById("sourceFilter").value;
-  const url = new URL("https://cti-dashboard-9j95.onrender.com/cti-data");
+  const url = new URL("https://cti-dashboard-9j95.onrender.com/cti-data"); // Update if local
 
   const tbody = document.getElementById("cti-table-body");
   const chartCanvas = document.getElementById("sourceChart");
@@ -34,13 +34,10 @@ function loadData() {
       tbody.style.display = "table-row-group";
 
       if (!data || !Array.isArray(data.data) || data.data.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan='6' class='text-center text-muted py-4'>
-              <i class='bi bi-database-x fs-4 d-block mb-2'></i>
-              No threat indicators match your filter
-            </td>
-          </tr>`;
+        tbody.innerHTML = `<tr><td colspan='3' class='text-center text-muted py-4'>
+          <i class='bi bi-database-x fs-4 d-block mb-2'></i>
+          No threat indicators match your filter
+        </td></tr>`;
         updateStats(0, 0, 0);
         return;
       }
@@ -57,15 +54,15 @@ function loadData() {
 
       data.data.forEach(entry => {
         const row = document.createElement("tr");
+        row.classList.add("indicator-row");
 
         const severityBadge = {
-          High: `<span class='badge bg-danger' title='High: Many detections'><i class='bi bi-exclamation-triangle-fill me-1'></i>High</span>`,
-          Medium: `<span class='badge bg-warning text-dark' title='Medium: Some detections'><i class='bi bi-exclamation-circle me-1'></i>Medium</span>`,
-          Low: `<span class='badge bg-info text-dark' title='Low: Few or no detections'><i class='bi bi-info-circle me-1'></i>Low</span>`
+          High: `<span class='badge bg-danger'><i class='bi bi-exclamation-triangle-fill me-1'></i>High</span>`,
+          Medium: `<span class='badge bg-warning text-dark'><i class='bi bi-exclamation-circle me-1'></i>Medium</span>`,
+          Low: `<span class='badge bg-info text-dark'><i class='bi bi-info-circle me-1'></i>Low</span>`
         }[entry.severity] || `<span class='badge bg-secondary'>Unknown</span>`;
 
         const detailsRowId = `details-${entry.indicator.replace(/[^a-zA-Z0-9]/g, "")}`;
-        row.classList.add("indicator-row");
         row.innerHTML = `
           <td class="fw-bold text-decoration-underline" style="cursor:pointer;" onclick="toggleDetails('${detailsRowId}', this)">
             <i class="bi bi-chevron-right me-1 toggle-icon"></i>${entry.indicator}
@@ -73,15 +70,13 @@ function loadData() {
           <td>${severityBadge}</td>
           <td>${entry.source}</td>
         `;
-
         tbody.appendChild(row);
 
-        // Add hidden details row
         const detailsRow = document.createElement("tr");
         detailsRow.id = detailsRowId;
         detailsRow.classList.add("details-row");
         detailsRow.style.display = "none";
-        const isDark = localStorage.getItem("theme") === "dark";
+
         detailsRow.innerHTML = `
           <td colspan="3">
             <div class="p-2 rounded small fw-normal ${isDark ? 'bg-dark text-light border-secondary' : 'bg-light text-dark border'}">
@@ -91,10 +86,7 @@ function loadData() {
             </div>
           </td>
         `;
-
         tbody.appendChild(detailsRow);
-
-
 
         sourceCount[entry.source] = (sourceCount[entry.source] || 0) + 1;
         severityCount[entry.severity] = (severityCount[entry.severity] || 0) + 1;
@@ -119,9 +111,7 @@ function loadData() {
         },
         options: {
           animation: { duration: 1000, easing: "easeOutQuart" },
-          plugins: {
-            legend: { labels: { color: labelColor } }
-          }
+          plugins: { legend: { labels: { color: labelColor } } }
         }
       });
 
@@ -170,15 +160,37 @@ function loadData() {
           }
         }
       });
+
+      // Show toast if errors exist
+      if (data.errors && data.errors.length > 0) {
+        const msg = `⚠️ The following sources failed or hit limits: ${data.errors.join(", ")}`;
+        document.getElementById("toastMessage").textContent = msg;
+        const toastEl = document.getElementById("errorToast");
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
+      }
+
     })
     .catch(error => {
       console.error("Error fetching CTI data:", error);
       spinner.style.display = "none";
       chartCard.style.display = "block";
       tbody.style.display = "table-row-group";
-      tbody.innerHTML = "<tr><td colspan='6' class='text-center text-danger'>Failed to load data</td></tr>";
+      tbody.innerHTML = "<tr><td colspan='3' class='text-center text-danger'>Failed to load data</td></tr>";
       updateStats(0, 0, 0);
     });
+}
+
+function toggleDetails(id, cell) {
+  const row = document.getElementById(id);
+  const icon = cell.querySelector(".toggle-icon");
+  if (row.style.display === "none") {
+    row.style.display = "table-row";
+    icon.classList.replace("bi-chevron-right", "bi-chevron-down");
+  } else {
+    row.style.display = "none";
+    icon.classList.replace("bi-chevron-down", "bi-chevron-right");
+  }
 }
 
 function toggleAutoRefresh() {
@@ -236,9 +248,9 @@ function applyTheme() {
   document.body.classList.toggle("bg-dark", isDark);
   document.body.classList.toggle("text-light", isDark);
 
-  document.querySelectorAll("table").forEach(tbl =>
-    tbl.classList.toggle("table-dark", isDark)
-  );
+  document.querySelectorAll("table").forEach(tbl => {
+    tbl.classList.toggle("table-dark", isDark);
+  });
 
   document.querySelectorAll(".card").forEach(card => {
     card.classList.remove("bg-light", "bg-dark", "text-light", "text-white");
@@ -261,22 +273,6 @@ function applyTheme() {
 
   document.getElementById("themeIcon").className = isDark ? "bi bi-moon-fill" : "bi bi-sun-fill";
 }
-
-function toggleDetails(id, cell) {
-  const row = document.getElementById(id);
-  const icon = cell.querySelector(".toggle-icon");
-  if (row.style.display === "none") {
-    row.style.display = "table-row";
-    icon.classList.remove("bi-chevron-right");
-    icon.classList.add("bi-chevron-down");
-  } else {
-    row.style.display = "none";
-    icon.classList.remove("bi-chevron-down");
-    icon.classList.add("bi-chevron-right");
-  }
-}
-
-
 
 applyTheme();
 loadData();
