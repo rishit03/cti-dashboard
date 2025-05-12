@@ -373,16 +373,33 @@ function updateStats(total, high, sources) {
   const lastUpdatedEl = document.getElementById("lastUpdated");
   if (lastUpdatedEl) lastUpdatedEl.textContent = new Date().toLocaleTimeString();
 
-  const options = { duration: 1.5, useEasing: true, startVal: parseInt(document.getElementById("totalCount").textContent) || 0 };
-  
   const totalCountEl = document.getElementById("totalCount");
-  if (totalCountEl) new CountUp(totalCountEl, total, options).start();
-  
   const highCountEl = document.getElementById("highCount");
-  if (highCountEl) new CountUp(highCountEl, high, {...options, startVal: parseInt(highCountEl.textContent) || 0}).start();
-  
   const sourceCountEl = document.getElementById("sourceCount");
-  if (sourceCountEl) new CountUp(sourceCountEl, sources, {...options, startVal: parseInt(sourceCountEl.textContent) || 0}).start();
+
+  // Check if CountUp is available
+  if (typeof CountUp !== 'undefined' && CountUp) {
+    const createCountUpInstance = (element, endVal) => {
+      if (element) {
+        // Ensure startVal is read from the element's current textContent before CountUp modifies it
+        const currentVal = parseInt(element.textContent);
+        const startVal = isNaN(currentVal) ? 0 : currentVal;
+        new CountUp(element, endVal, { duration: 1.5, useEasing: true, startVal }).start();
+      }
+    };
+    createCountUpInstance(totalCountEl, total);
+    createCountUpInstance(highCountEl, high);
+    createCountUpInstance(sourceCountEl, sources);
+  } else {
+    // Fallback: Update text content directly if CountUp is not defined
+    if (totalCountEl) totalCountEl.textContent = total;
+    if (highCountEl) highCountEl.textContent = high;
+    if (sourceCountEl) sourceCountEl.textContent = sources;
+    // Add a console warning only if CountUp is truly undefined, not just falsy
+    if (typeof CountUp === 'undefined') {
+      console.warn("CountUp.js library not loaded from CDN. Statistics are displayed without animation.");
+    }
+  }
 }
 
 /**
@@ -600,3 +617,4 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
