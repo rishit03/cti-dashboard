@@ -105,8 +105,10 @@
   <!-- Header -->
   <div class="header-section text-center position-relative">
     <h1 class="fw-bold"><i class="bi bi-shield-lock-fill me-2"></i>Cyber Threat Intelligence Dashboard</h1>
-    <p class="text-white-50 fs-5 mb-0">Real-time indicators from AbuseIPDB, OTX, VirusTotal, GreyNoise & MalwareBazaar</p>
-
+    <p class="text-white-50 fs-5 mb-0">
+      Real-time indicators from AbuseIPDB, OTX, VirusTotal & MalwareBazaar
+    </p>
+        
     <!-- Theme Toggle with Icon -->
     <div class="form-check form-switch text-end">
       <input class="form-check-input" type="checkbox" id="themeToggle" onchange="toggleTheme()">
@@ -154,13 +156,6 @@
               <i class="bi bi-arrow-clockwise"></i>
             </button>
           </div>
-
-          <!-- Auto Refresh -->
-          <div class="form-check form-switch mt-3 text-start">
-            <input class="form-check-input" type="checkbox" id="autoRefreshToggle" onchange="toggleAutoRefresh()">
-            <label class="form-check-label small" for="autoRefreshToggle">Auto Refresh (30s)</label>
-            <div id="countdownTimer" class="small text-muted mt-1" style="display: none;">Refreshing in: 30s</div>
-          </div>
         </div>
       </div>
     </div>
@@ -188,9 +183,14 @@
             <option value="AbuseIPDB">AbuseIPDB</option>
             <option value="OTX">OTX</option>
             <option value="VirusTotal">VirusTotal</option>
-            <option value="GreyNoise">GreyNoise</option>
             <option value="MalwareBazaar">MalwareBazaar</option>
           </select>
+          <!-- Auto Refresh Toggle -->
+          <div class="form-check form-switch mt-3">
+            <input class="form-check-input" type="checkbox" id="autoRefreshToggle" onchange="toggleAutoRefresh()">
+            <label class="form-check-label" for="autoRefreshToggle">Auto Refresh (30s)</label>
+            <div id="countdownTimer" class="small text-muted mt-1" style="display: none;">Refreshing in: 30s</div>
+          </div>
         </div>
       </div>
     </div>
@@ -207,6 +207,20 @@
         </div>
       </div>
     </div>
+
+    <div class="card mt-4 shadow-sm" id="vtLookupSection">
+      <div class="card-header bg-warning text-dark">
+        <strong><i class="bi bi-search me-1"></i> VirusTotal IP Lookup</strong>
+      </div>
+      <div class="card-body">
+        <div class="input-group">
+          <input type="text" id="vtIpInput" class="form-control" placeholder="Enter IP address">
+          <button class="btn btn-outline-primary" onclick="lookupVTIp()">Lookup</button>
+        </div>
+        <div id="vtResult" class="mt-3 small"></div>
+      </div>
+    </div>
+    
   </div>
 
   <!-- Loading Spinner -->
@@ -214,6 +228,12 @@
     <div class="spinner-border text-primary" role="status"></div>
     <p class="mt-2">Loading threat data...</p>
   </div>
+
+  <!-- Search Input -->
+  <div class="mb-3 d-flex justify-content-end">
+    <input type="text" id="searchInput" class="form-control" placeholder="Search indicator (IP, hash...)" style="max-width: 300px;" oninput="renderTablePage()" />
+  </div>
+
 
   <!-- Table -->
   <table class="table table-bordered table-hover" style="margin-top: -1rem;">

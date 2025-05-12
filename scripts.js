@@ -49,12 +49,6 @@ function loadData() {
         severityCount[entry.severity] = (severityCount[entry.severity] || 0) + 1;
       });
 
-      updateStats(
-        data.data.length,
-        data.data.filter(d => d.severity === "High").length,
-        new Set(data.data.map(d => d.source)).size
-      );
-
       window.sourceChartInstance = new Chart(document.getElementById("sourceChart").getContext("2d"), {
         type: "pie",
         data: {
@@ -128,14 +122,21 @@ function loadData() {
 }
 
 function renderTablePage() {
+  const searchValue = document.getElementById("searchInput")?.value.toLowerCase() || "";
+  const filteredData = allCTIData.filter(item =>
+    item.indicator.toLowerCase().includes(searchValue)
+  );
+
   const tbody = document.getElementById("cti-table-body");
   const pagination = document.getElementById("paginationControls");
   tbody.innerHTML = "";
   pagination.innerHTML = "";
 
+  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
   const start = (currentPage - 1) * rowsPerPage;
   const end = start + rowsPerPage;
-  const pageData = allCTIData.slice(start, end);
+  const pageData = filteredData.slice(start, end);
+
   const isDark = localStorage.getItem("theme") === "dark";
 
   pageData.forEach(entry => {
@@ -171,8 +172,6 @@ function renderTablePage() {
     tbody.appendChild(detailsRow);
   });
 
-  const totalPages = Math.ceil(allCTIData.length / rowsPerPage);
-
   const createPageBtn = (label, page, active = false, disabled = false) => {
     const btn = document.createElement("button");
     btn.className = `btn btn-sm ${active ? "btn-primary" : "btn-outline-primary"} me-1`;
@@ -200,7 +199,14 @@ function renderTablePage() {
 
   const pageIndicator = document.getElementById("pageIndicator");
   pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
+
+  // ✅ Update stats based on filtered data
+  const total = filteredData.length;
+  const highSeverity = filteredData.filter(d => d.severity === "High").length;
+  const uniqueSources = new Set(filteredData.map(d => d.source)).size;
+  updateStats(total, highSeverity, uniqueSources);
 }
+
 
 function toggleDetails(id, cell) {
   const row = document.getElementById(id);
@@ -288,17 +294,64 @@ function applyTheme() {
 
 function jumpToPage() {
   const input = document.getElementById("jumpPage");
-  const totalPages = Math.ceil(allCTIData.length / rowsPerPage);
+  const totalPages = Math.ceil(allCTIData.filter(item =>
+    item.indicator.toLowerCase().includes(
+      document.getElementById("searchInput")?.value.toLowerCase() || ""
+    )
+  ).length / rowsPerPage);
+
   let page = parseInt(input.value);
   if (isNaN(page) || page < 1) page = 1;
   if (page > totalPages) page = totalPages;
+
   currentPage = page;
   renderTablePage();
 }
 
+function lookupVTIp() {
+  const ip = document.getElementById("vtIpInput").value.trim();
+  const resultBox = document.getElementById("vtResult");
+
+  if (!ip) {
+    resultBox.innerHTML = "<div class='text-danger'>⚠️ Please enter a valid IP address.</div>";
+    return;
+  }
+
+  resultBox.innerHTML = "<div class='text-muted'>⏳ Fetching from VirusTotal...</div>";
+
+  fetch(`https://cti-dashboard-9j95.onrender.com/vt-lookup?ip=${ip}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) {
+        resultBox.innerHTML = `<div class='text-danger'>❌ ${data.error}</div>`;
+        return;
+      }
+
+      resultBox.innerHTML = `
+        <div><strong>IP:</strong> ${ip}</div>
+        <div><strong>Malicious:</strong> ${data.malicious}</div>
+        <div><strong>Suspicious:</strong> ${data.suspicious}</div>
+        <div><strong>Last Seen:</strong> ${data.last_analysis}</div>
+        <div><strong>Tags:</strong> ${data.tags.join(", ")}</div>
+        <div class="mt-2"><a href="https://www.virustotal.com/gui/ip-address/${ip}" target="_blank" class="btn btn-sm btn-outline-secondary">View on VirusTotal</a></div>
+      `;
+    })
+    .catch(err => {
+      console.error(err);
+      resultBox.innerHTML = "<div class='text-danger'>⚠️ Failed to fetch data from backend.</div>";
+    });
+}
+
+
 document.addEventListener("keydown", (e) => {
   if (!allCTIData.length) return;
-  const totalPages = Math.ceil(allCTIData.length / rowsPerPage);
+
+  const searchValue = document.getElementById("searchInput")?.value.toLowerCase() || "";
+  const filteredLength = allCTIData.filter(item =>
+    item.indicator.toLowerCase().includes(searchValue)
+  ).length;
+
+  const totalPages = Math.ceil(filteredLength / rowsPerPage);
   if (e.key === "ArrowLeft" && currentPage > 1) {
     currentPage--;
     renderTablePage();

@@ -1,10 +1,11 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import os
 import traceback
 from dotenv import load_dotenv
 from datetime import datetime
+import re
 
 load_dotenv()
 
@@ -21,7 +22,6 @@ app.add_middleware(
 ABUSEIPDB_API_KEY = os.getenv("ABUSEIPDB_API_KEY")
 OTX_API_KEY = os.getenv("OTX_API_KEY")
 VT_API_KEY = os.getenv("VIRUSTOTAL_API_KEY")
-GREYNOISE_API_KEY = os.getenv("GREYNOISE_API_KEY")
 
 @app.get("/cti-data")
 async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
@@ -147,52 +147,7 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
             traceback.print_exc()
             errors.append("VirusTotal")
 
-    # === GreyNoise ===
-    if not source or source == "GreyNoise":
-        headers = {
-            "key": GREYNOISE_API_KEY
-        }
-        sample_ips = [
-            "185.220.101.4", "104.244.72.115", "195.54.160.149",
-            "185.156.73.62", "64.227.79.24"
-        ]
-
-        try:
-            async with httpx.AsyncClient(timeout=20.0) as client:
-                for ip in sample_ips:
-                    gn_response = await client.get(
-                        f"https://api.greynoise.io/v3/community/{ip}",
-                        headers=headers
-                    )
-                    if gn_response.status_code == 200:
-                        result = gn_response.json()
-                        classification = result.get("classification", "unknown")
-
-                        if classification == "malicious":
-                            severity_level = "High"
-                        elif classification == "unknown":
-                            severity_level = "Medium"
-                        else:
-                            severity_level = "Low"
-
-                        entry = {
-                            "indicator": ip,
-                            "type": "IP",
-                            "source": "GreyNoise",
-                            "severity": severity_level,
-                            "categories": [result.get("name", "Unknown")],
-                            "reported_at": "N/A"
-                        }
-
-                        if severity and entry["severity"] != severity:
-                            continue
-                        normalized.append(entry)
-        except Exception:
-            print("[ERROR] GreyNoise request failed:")
-            traceback.print_exc()
-            errors.append("GreyNoise")
-
-    # === MalwareBazaar (Multi-tag with severity & signature)
+    # === MalwareBazaar ===
     if not source or source == "MalwareBazaar":
         tags = ["exe", "stealer", "ransomware"]
         try:
@@ -234,3 +189,40 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
             errors.append("MalwareBazaar")
 
     return { "data": normalized, "errors": errors }
+
+# === VirusTotal Real-Time IP Lookup Endpoint ===
+
+def is_valid_ip(ip: str) -> bool:
+    return re.match(r"^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", ip) is not None
+
+@app.get("/vt-lookup")
+async def vt_lookup(ip: str):
+    if not ip:
+        raise HTTPException(status_code=400, detail="Missing IP address")
+    if not is_valid_ip(ip):
+        raise HTTPException(status_code=400, detail="Invalid IP format")
+
+    headers = {
+        "x-apikey": VT_API_KEY
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.get(f"https://www.virustotal.com/api/v3/ip_addresses/{ip}", headers=headers)
+
+        if response.status_code != 200:
+            return { "error": f"VirusTotal returned {response.status_code}" }
+
+        data = response.json().get("data", {})
+        attr = data.get("attributes", {})
+
+        return {
+            "malicious": attr.get("last_analysis_stats", {}).get("malicious", 0),
+            "suspicious": attr.get("last_analysis_stats", {}).get("suspicious", 0),
+            "tags": attr.get("tags", []) or ["Unknown"],
+            "last_analysis": datetime.utcfromtimestamp(attr.get("last_analysis_date", 0)).isoformat() if attr.get("last_analysis_date") else "N/A"
+        }
+
+    except Exception as e:
+        print("[ERROR] VT lookup failed:", e)
+        return { "error": "Request failed or timed out." }
