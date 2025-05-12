@@ -21,16 +21,19 @@
       --card-shadow-light: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
       --text-muted-light: #6c757d;
 
-      --body-bg-dark: #1a1a2e;
-      --body-color-dark: #e0e0e0;
-      --card-bg-dark: #24243e;
-      --card-border-dark: #3a3a5a;
-      --card-shadow-dark: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-      --text-muted-dark: #a0a0c0;
+      /* Dark Theme Colors - Enhanced for Readability */
+      --body-bg-dark: #121212; /* Darker background for better contrast */
+      --body-color-dark: #e0e0e0; /* General light text color */
+      --card-bg-dark: #1e1e1e; /* Slightly lighter card background */
+      --card-border-dark: #333333; /* Softer border color */
+      --card-shadow-dark: 0 0.5rem 1rem rgba(0, 0, 0, 0.25);
+      --text-muted-dark: #a0a0c0; /* Lighter muted text */
+      --link-color-dark: #6cb2eb; /* Lighter link color */
+      --link-hover-color-dark: #8ec9f5;
 
-      --primary-color: #007bff; /* Bootstrap blue, can be changed */
+      --primary-color: #007bff;
       --primary-hover-color: #0056b3;
-      --accent-color: #17a2b8; /* Teal accent */
+      --accent-color: #17a2b8;
       --accent-hover-color: #117a8b;
       --danger-color: #dc3545;
       --warning-color: #ffc107;
@@ -41,7 +44,7 @@
       --header-bg-dark: linear-gradient(135deg, #1c3a5e 0%, #3c1e70 100%);
       --header-text-color: #ffffff;
 
-      --transition-speed: 0.3s ease;
+      --transition-speed: 0.2s ease;
     }
 
     body {
@@ -49,7 +52,7 @@
       background-color: var(--body-bg-light);
       color: var(--body-color-light);
       transition: background-color var(--transition-speed), color var(--transition-speed);
-      padding: 1.5rem !important; /* Overriding p-4 for consistent padding */
+      padding: 1.5rem !important;
     }
 
     body.dark-theme {
@@ -57,33 +60,64 @@
       color: var(--body-color-dark);
     }
 
-    body.bg-dark {
-      color: #dee2e6; /* Light gray text by default */
+    /* Ensure general text elements in dark mode are light */
+    body.dark-theme,
+    body.dark-theme .card,
+    body.dark-theme .modal-content,
+    body.dark-theme .table {
+        color: var(--body-color-dark);
     }
 
-    body.bg-dark .text-dark {
-      color: #dee2e6 !important; /* override accidental .text-dark */
+    body.dark-theme h1, body.dark-theme h2, body.dark-theme h3, body.dark-theme h4, body.dark-theme h5, body.dark-theme h6,
+    body.dark-theme p,
+    body.dark-theme label,
+    body.dark-theme strong,
+    body.dark-theme .form-label,
+    body.dark-theme .page-indicator,
+    body.dark-theme .small {
+        color: var(--body-color-dark) !important; /* Ensure high specificity */
     }
 
-    body.bg-dark .bg-light {
-      background-color: #1f1f1f !important; /* override bright bg */
+    body.dark-theme .text-muted {
+        color: var(--text-muted-dark) !important;
     }
 
-    body.bg-dark pre {
-      background-color: #212529 !important;
-      color: #f8f9fa;
+    body.dark-theme .text-dark {
+      color: var(--body-color-dark) !important; /* Override Bootstrap's .text-dark */
     }
 
-    body.bg-dark .form-control,
-    body.bg-dark input,
-    body.bg-dark select {
-      background-color: #343a40;
-      color: #fff;
-      border-color: #495057;
+    body.dark-theme .bg-light {
+      background-color: var(--card-bg-dark) !important; /* Use card background for elements that were light */
+      color: var(--body-color-dark) !important;
     }
 
-    body.bg-dark .form-control::placeholder {
-      color: #aaa;
+    body.dark-theme pre,
+    body.dark-theme #jsonView {
+      background-color: #2c2c2c !important; /* Darker pre background */
+      color: #f0f0f0 !important; /* Lighter pre text */
+      border-color: var(--card-border-dark) !important;
+    }
+
+    body.dark-theme .form-control,
+    body.dark-theme input[type="text"],
+    body.dark-theme input[type="number"],
+    body.dark-theme select {
+      background-color: #2c2c2c; /* Darker input background */
+      color: var(--body-color-dark);
+      border-color: var(--card-border-dark);
+    }
+
+    body.dark-theme .form-control::placeholder {
+      color: #888888; /* Lighter placeholder */
+    }
+    body.dark-theme .form-control:focus,
+    body.dark-theme input[type="text"]:focus,
+    body.dark-theme input[type="number"]:focus,
+    body.dark-theme select:focus {
+        background-color: #2c2c2c;
+        color: var(--body-color-dark);
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 0.25rem rgba(var(--bs-info-rgb), 0.35); /* Using info as accent for focus */
     }
 
     .header-section {
@@ -98,26 +132,13 @@
     }
     body.dark-theme .header-section {
       background: var(--header-bg-dark);
+      color: var(--header-text-color); /* Explicitly set for header text */
+    }
+    body.dark-theme .header-section h1,
+    body.dark-theme .header-section p {
+        color: var(--header-text-color) !important;
     }
 
-    .header-section h1 {
-      font-weight: 700;
-      font-size: 2.25rem;
-    }
-    .header-section p {
-      font-size: 1.1rem;
-      opacity: 0.85;
-    }
-
-    .theme-toggle-switch {
-      position: absolute;
-      top: 1.5rem;
-      right: 1.5rem;
-    }
-    .theme-toggle-switch .form-check-input {
-        width: 2.5em;
-        height: 1.25em;
-    }
     .theme-toggle-switch .form-check-label {
         color: var(--header-text-color);
     }
@@ -128,18 +149,12 @@
       border-radius: 0.5rem;
       box-shadow: var(--card-shadow-light);
       transition: background-color var(--transition-speed), border-color var(--transition-speed), box-shadow var(--transition-speed);
-      height: 100%; /* For consistent card heights in rows */
+      height: 100%;
     }
     body.dark-theme .card {
       background-color: var(--card-bg-dark);
       border-color: var(--card-border-dark);
       box-shadow: var(--card-shadow-dark);
-    }
-    .card:hover {
-      box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1);
-    }
-    body.dark-theme .card:hover {
-      box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.2);
     }
 
     .card-header {
@@ -149,65 +164,46 @@
     }
     body.dark-theme .card-header {
       border-bottom-color: var(--card-border-dark);
+      color: var(--body-color-dark); /* Ensure card header text is light */
     }
-    .card-header.bg-primary {
-        background-color: var(--primary-color) !important;
-        color: white;
-    }
+    .card-header.bg-primary,
     .card-header.bg-success {
-        background-color: var(--success-color) !important;
-        color: white;
+        color: white !important; /* Ensure contrast on colored headers */
     }
-     .card-header.bg-warning {
-        background-color: var(--warning-color) !important;
-        color: #212529; /* Dark text on yellow */
+    .card-header.bg-warning {
+        color: #212529 !important; /* Dark text on yellow */
+    }
+    body.dark-theme .card-header.bg-warning {
+        color: #212529 !important; /* Keep dark text on yellow for dark mode too */
     }
 
-    .stats-card .card-body {
-        padding: 1rem;
-    }
     .stats-card h6 {
         font-size: 0.9rem;
         color: var(--text-muted-light);
         margin-bottom: 0.25rem;
     }
     body.dark-theme .stats-card h6 {
-        color: var(--text-muted-dark);
+        color: var(--text-muted-dark) !important;
     }
     .stats-card h4 {
         font-weight: 700;
         font-size: 1.75rem;
     }
-    #cardUpdated .btn-light {
-        background-color: rgba(0,0,0,0.05);
-        border: none;
+    body.dark-theme .stats-card h4 {
+        color: var(--body-color-dark); /* Ensure stat numbers are light */
     }
+    body.dark-theme .stats-card .text-danger { color: var(--danger-color) !important; }
+    body.dark-theme .stats-card .text-info { color: var(--info-color) !important; }
+
     body.dark-theme #cardUpdated .btn-light {
         background-color: rgba(255,255,255,0.1);
         color: var(--body-color-dark);
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    body.dark-theme #cardUpdated .btn-light:hover {
+        background-color: rgba(255,255,255,0.15);
     }
 
-    .form-select, .form-control {
-      border-radius: 0.375rem;
-      transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
-    }
-    body.dark-theme .form-select, body.dark-theme .form-control {
-        background-color: var(--card-bg-dark);
-        color: var(--body-color-dark);
-        border-color: var(--card-border-dark);
-    }
-    body.dark-theme .form-select:focus, body.dark-theme .form-control:focus {
-        background-color: var(--card-bg-dark);
-        color: var(--body-color-dark);
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
-    }
-
-    .table {
-      margin-top: 1rem !important;
-      border-collapse: separate;
-      border-spacing: 0;
-    }
     .table thead th {
       font-weight: 600;
       background-color: var(--card-bg-light);
@@ -216,6 +212,7 @@
     body.dark-theme .table thead th {
       background-color: var(--card-bg-dark);
       border-color: var(--card-border-dark);
+      color: var(--body-color-dark); /* Ensure table headers are light */
     }
     .table tbody tr:nth-child(odd) {
         background-color: rgba(0,0,0,0.02);
@@ -223,16 +220,8 @@
     body.dark-theme .table tbody tr:nth-child(odd) {
         background-color: rgba(255,255,255,0.03);
     }
-    .table tbody tr:hover {
-      background-color: rgba(0, 123, 255, 0.07);
-      cursor: pointer;
-    }
-    body.dark-theme .table tbody tr:hover {
-      background-color: rgba(var(--bs-primary-rgb), 0.15);
-    }
-    .table td, .table th {
-        padding: 0.9rem;
-        vertical-align: middle;
+    body.dark-theme .table td .text-primary {
+        color: var(--link-color-dark) !important;
     }
 
     #paginationControls button {
@@ -241,80 +230,64 @@
       transition: background-color var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
       border-radius: 0.375rem;
     }
-    #paginationControls .btn-outline-primary {
-      border-color: var(--primary-color);
-      color: var(--primary-color);
-    }
     body.dark-theme #paginationControls .btn-outline-primary {
       border-color: var(--accent-color);
       color: var(--accent-color);
     }
-    #paginationControls .btn-outline-primary:hover {
-      background-color: var(--primary-color);
-      color: white;
-    }
     body.dark-theme #paginationControls .btn-outline-primary:hover {
       background-color: var(--accent-color);
-      color: var(--body-bg-dark);
-    }
-    #paginationControls .btn-primary {
-      background-color: var(--primary-color);
-      border-color: var(--primary-color);
-      font-weight: 600;
+      color: var(--body-bg-dark); /* Dark text on accent bg for contrast */
     }
     body.dark-theme #paginationControls .btn-primary {
       background-color: var(--accent-color);
       border-color: var(--accent-color);
-      color: var(--body-bg-dark);
-    }
-    #paginationControls span {
-      line-height: 38px; /* Match button height */
-      padding: 0 0.5rem;
-      color: var(--text-muted-light);
+      color: var(--body-bg-dark); /* Dark text on accent bg for contrast */
     }
     body.dark-theme #paginationControls span {
       color: var(--text-muted-dark);
     }
+    body.dark-theme .btn-outline-secondary {
+        color: var(--text-muted-dark);
+        border-color: var(--text-muted-dark);
+    }
+    body.dark-theme .btn-outline-secondary:hover {
+        color: var(--body-color-dark);
+        background-color: var(--text-muted-dark);
+    }
 
-    .modal-content {
-        background-color: var(--card-bg-light);
-        border-radius: 0.5rem;
-    }
-    body.dark-theme .modal-content {
-        background-color: var(--card-bg-dark);
-    }
-    .modal-header {
-        border-bottom-color: var(--card-border-light);
-    }
-    body.dark-theme .modal-header {
-        border-bottom-color: var(--card-border-dark);
-    }
-    .modal-header .btn-close {
-        filter: var(--bs-btn-close-white-filter); /* For dark headers */
+    body.dark-theme .modal-header .btn-close {
+        filter: invert(1) grayscale(100%) brightness(200%);
     }
     body.dark-theme .modal-header.bg-dark .btn-close {
         filter: invert(1) grayscale(100%) brightness(200%);
     }
-    #jsonView {
-        background-color: var(--body-bg-light) !important; /* Override inline */
-        color: var(--body-color-light) !important; /* Override inline */
-        border: 1px solid var(--card-border-light);
-        border-radius: 0.375rem;
-        padding: 1rem !important;
-        font-family: monospace;
-        white-space: pre-wrap;
-        word-break: break-all;
-    }
-    body.dark-theme #jsonView {
-        background-color: var(--body-bg-dark) !important;
-        color: var(--body-color-dark) !important;
-        border-color: var(--card-border-dark);
+    body.dark-theme .modal-header {
+        color: var(--body-color-dark);
     }
 
-    .spinner-border {
-        width: 3rem;
-        height: 3rem;
-        border-width: .3em;
+    /* Ensure specific Bootstrap utility classes for text color are handled in dark mode */
+    body.dark-theme .text-primary { color: var(--link-color-dark) !important; }
+    body.dark-theme .text-secondary { color: var(--text-muted-dark) !important; }
+    body.dark-theme .text-success { color: var(--success-color) !important; }
+    body.dark-theme .text-danger { color: var(--danger-color) !important; }
+    body.dark-theme .text-warning { color: var(--warning-color) !important; }
+    body.dark-theme .text-info { color: var(--info-color) !important; }
+    body.dark-theme .text-light { color: #f8f9fa !important; } /* Keep light text light */
+    body.dark-theme .text-body { color: var(--body-color-dark) !important; }
+
+    /* Alert styling for VT lookup */
+    body.dark-theme #vtResult .alert-warning {
+        background-color: rgba(var(--bs-warning-rgb), 0.2);
+        color: var(--warning-color);
+        border-color: rgba(var(--bs-warning-rgb), 0.3);
+    }
+    body.dark-theme #vtResult .alert-danger {
+        background-color: rgba(var(--bs-danger-rgb), 0.2);
+        color: var(--danger-color);
+        border-color: rgba(var(--bs-danger-rgb), 0.3);
+    }
+    body.dark-theme #vtResult .text-muted {
+        color: var(--text-muted-dark) !important;
     }
 
     /* Custom scrollbar for webkit browsers */
@@ -350,12 +323,12 @@
     }
     body.dark-theme :focus-visible {
         outline-color: var(--accent-color);
-        box-shadow: 0 0 0 0.25rem rgba(var(--bs-accent-rgb),0.5); /* Need to define --bs-accent-rgb if not available */
+        box-shadow: 0 0 0 0.25rem rgba(var(--bs-info-rgb),0.35); /* Using info as accent for focus */
     }
 
     canvas {
       width: 100% !important;
-      max-height: 320px; /* Increased slightly */
+      max-height: 320px;
     }
 
   </style>
@@ -525,7 +498,7 @@
             <div class="d-flex align-items-center gap-2">
                 <label for="jumpPage" class="form-label small mb-0">Jump:</label>
                 <input type="number" id="jumpPage" min="1" style="width: 75px;" class="form-control form-control-sm d-inline-block" aria-label="Jump to page number" />
-                <button onclick="jumpToPage()" class="btn btn-sm btn-outline-secondary">Go</button>
+                <button onclick="jumpToPage()" class="btn btn-sm btn-outline-secondary ms-1">Go</button>
             </div>
         </div>
     </div>
@@ -572,4 +545,3 @@
   <script src="scripts.js"></script>
 </body>
 </html>
-
