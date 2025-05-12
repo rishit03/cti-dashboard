@@ -57,6 +57,35 @@
       color: var(--body-color-dark);
     }
 
+    body.bg-dark {
+      color: #dee2e6; /* Light gray text by default */
+    }
+
+    body.bg-dark .text-dark {
+      color: #dee2e6 !important; /* override accidental .text-dark */
+    }
+
+    body.bg-dark .bg-light {
+      background-color: #1f1f1f !important; /* override bright bg */
+    }
+
+    body.bg-dark pre {
+      background-color: #212529 !important;
+      color: #f8f9fa;
+    }
+
+    body.bg-dark .form-control,
+    body.bg-dark input,
+    body.bg-dark select {
+      background-color: #343a40;
+      color: #fff;
+      border-color: #495057;
+    }
+
+    body.bg-dark .form-control::placeholder {
+      color: #aaa;
+    }
+
     .header-section {
       background: var(--header-bg-light);
       color: var(--header-text-color);
