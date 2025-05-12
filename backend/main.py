@@ -50,7 +50,7 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
             if abuseipdb_response.status_code != 200:
                 print(f"[ERROR] AbuseIPDB returned {abuseipdb_response.status_code}")
                 errors.append("AbuseIPDB")
-                return {"data": normalized, "errors": errors}
+                
 
             abuse_data = abuseipdb_response.json()
 
