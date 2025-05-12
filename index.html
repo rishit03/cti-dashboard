@@ -9,6 +9,25 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/1.9.3/countUp.min.js"></script>
   <style>
+    #paginationControls button {
+      min-width: 40px;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+    }
+
+    #paginationControls .btn-outline-primary:hover {
+      background-color: #0d6efd;
+      color: white;
+    }
+
+    #paginationControls .btn-primary {
+      font-weight: bold;
+    }
+
+    #paginationControls span {
+      line-height: 32px;
+      padding: 0 6px;
+    }
     .header-section {
       background: linear-gradient(-45deg, #0d6efd, #6610f2, #6f42c1, #0dcaf0);
       background-size: 400% 400%;
@@ -172,6 +191,10 @@
     </thead>
     <tbody id="cti-table-body"></tbody>
   </table>
+
+  <!-- Pagination Controls -->
+<div id="paginationControls" class="mt-3 d-flex flex-wrap gap-1 justify-content-center"></div>
+
 
   <!-- Bootstrap Toast for API errors -->
   <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
