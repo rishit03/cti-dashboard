@@ -1,282 +1,509 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>CTI Dashboard</title>
+  <title>CTI Dashboard - Modernized</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/1.9.3/countUp.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.min.js"></script>
   <style>
-    body.bg-dark .card {
-      border: 1px solid #495057 !important;
+    :root {
+      --font-family-sans-serif: 'Inter', sans-serif;
+      --body-bg-light: #f8f9fa;
+      --body-color-light: #212529;
+      --card-bg-light: #ffffff;
+      --card-border-light: #dee2e6;
+      --card-shadow-light: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
+      --text-muted-light: #6c757d;
+
+      --body-bg-dark: #1a1a2e;
+      --body-color-dark: #e0e0e0;
+      --card-bg-dark: #24243e;
+      --card-border-dark: #3a3a5a;
+      --card-shadow-dark: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+      --text-muted-dark: #a0a0c0;
+
+      --primary-color: #007bff; /* Bootstrap blue, can be changed */
+      --primary-hover-color: #0056b3;
+      --accent-color: #17a2b8; /* Teal accent */
+      --accent-hover-color: #117a8b;
+      --danger-color: #dc3545;
+      --warning-color: #ffc107;
+      --info-color: #17a2b8;
+      --success-color: #28a745;
+
+      --header-bg-light: linear-gradient(135deg, #007bff 0%, #6610f2 100%);
+      --header-bg-dark: linear-gradient(135deg, #1c3a5e 0%, #3c1e70 100%);
+      --header-text-color: #ffffff;
+
+      --transition-speed: 0.3s ease;
     }
 
-    body.bg-dark .card-header {
-      border-bottom: 1px solid #495057;
+    body {
+      font-family: var(--font-family-sans-serif);
+      background-color: var(--body-bg-light);
+      color: var(--body-color-light);
+      transition: background-color var(--transition-speed), color var(--transition-speed);
+      padding: 1.5rem !important; /* Overriding p-4 for consistent padding */
     }
 
-    #paginationControls button {
-      min-width: 40px;
-      font-weight: 500;
-      transition: background-color 0.2s ease;
-    }
-
-    body.bg-dark #paginationControls .btn-outline-primary {
-      border-color: #6c757d;
-      color: #dee2e6;
-    }
-
-    body.bg-dark #paginationControls .btn-outline-primary:hover {
-      background-color: #0d6efd;
-      color: white;
-      border-color: #0d6efd;
-    }
-
-    #paginationControls .btn-outline-primary:hover {
-      background-color: #0d6efd;
-      color: white;
-    }
-
-    #paginationControls .btn-primary {
-      font-weight: bold;
-    }
-
-    #paginationControls span {
-      line-height: 32px;
-      padding: 0 6px;
-    }
-
-    /* 🧭 Center-align pagination controls */
-    #paginationControls {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.5rem;
-      margin-top: 1rem;
-    }
-
-    #paginationControls button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-
-    /* 🖱️ Hover style for outline buttons */
-    #paginationControls .btn-outline-primary:hover {
-      background-color: #0d6efd;
-      color: white;
-    }
-
-    /* 🎯 Make active page bold and styled */
-    #paginationControls .btn-primary {
-      font-weight: bold;
-      box-shadow: 0 0 5px rgba(13, 110, 253, 0.4);
-    }
-
-    /* ... spacing is subtle and clear */
-    #paginationControls span {
-      line-height: 2rem;
-      padding: 0 6px;
-      color: #6c757d;
+    body.dark-theme {
+      background-color: var(--body-bg-dark);
+      color: var(--body-color-dark);
     }
 
     .header-section {
-      background: linear-gradient(-45deg, #0d6efd, #6610f2, #6f42c1, #0dcaf0);
-      background-size: 400% 400%;
-      animation: gradientBG 12s ease infinite;
-      padding: 2rem;
-      border-radius: 1rem;
-      color: white;
-      margin-bottom: 2rem;
+      background: var(--header-bg-light);
+      color: var(--header-text-color);
+      padding: 2.5rem 2rem;
+      border-radius: 0.75rem;
+      margin-bottom: 2.5rem;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,0.1);
+    }
+    body.dark-theme .header-section {
+      background: var(--header-bg-dark);
     }
 
-    @keyframes gradientBG {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+    .header-section h1 {
+      font-weight: 700;
+      font-size: 2.25rem;
+    }
+    .header-section p {
+      font-size: 1.1rem;
+      opacity: 0.85;
     }
 
-    .card:hover {
-      box-shadow: 0 0 15px rgba(0, 255, 255, 0.2), 0 0 10px rgba(0, 123, 255, 0.2);
-      transition: box-shadow 0.3s ease-in-out;
-    }
-
-    .form-switch {
+    .theme-toggle-switch {
       position: absolute;
-      top: 20px;
-      right: 30px;
+      top: 1.5rem;
+      right: 1.5rem;
+    }
+    .theme-toggle-switch .form-check-input {
+        width: 2.5em;
+        height: 1.25em;
+    }
+    .theme-toggle-switch .form-check-label {
+        color: var(--header-text-color);
     }
 
-    .badge[title] {
-      cursor: help;
+    .card {
+      background-color: var(--card-bg-light);
+      border: 1px solid var(--card-border-light);
+      border-radius: 0.5rem;
+      box-shadow: var(--card-shadow-light);
+      transition: background-color var(--transition-speed), border-color var(--transition-speed), box-shadow var(--transition-speed);
+      height: 100%; /* For consistent card heights in rows */
+    }
+    body.dark-theme .card {
+      background-color: var(--card-bg-dark);
+      border-color: var(--card-border-dark);
+      box-shadow: var(--card-shadow-dark);
+    }
+    .card:hover {
+      box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1);
+    }
+    body.dark-theme .card:hover {
+      box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.2);
+    }
+
+    .card-header {
+      font-weight: 600;
+      border-bottom: 1px solid var(--card-border-light);
+      padding: 0.75rem 1.25rem;
+    }
+    body.dark-theme .card-header {
+      border-bottom-color: var(--card-border-dark);
+    }
+    .card-header.bg-primary {
+        background-color: var(--primary-color) !important;
+        color: white;
+    }
+    .card-header.bg-success {
+        background-color: var(--success-color) !important;
+        color: white;
+    }
+     .card-header.bg-warning {
+        background-color: var(--warning-color) !important;
+        color: #212529; /* Dark text on yellow */
+    }
+
+    .stats-card .card-body {
+        padding: 1rem;
+    }
+    .stats-card h6 {
+        font-size: 0.9rem;
+        color: var(--text-muted-light);
+        margin-bottom: 0.25rem;
+    }
+    body.dark-theme .stats-card h6 {
+        color: var(--text-muted-dark);
+    }
+    .stats-card h4 {
+        font-weight: 700;
+        font-size: 1.75rem;
+    }
+    #cardUpdated .btn-light {
+        background-color: rgba(0,0,0,0.05);
+        border: none;
+    }
+    body.dark-theme #cardUpdated .btn-light {
+        background-color: rgba(255,255,255,0.1);
+        color: var(--body-color-dark);
+    }
+
+    .form-select, .form-control {
+      border-radius: 0.375rem;
+      transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+    }
+    body.dark-theme .form-select, body.dark-theme .form-control {
+        background-color: var(--card-bg-dark);
+        color: var(--body-color-dark);
+        border-color: var(--card-border-dark);
+    }
+    body.dark-theme .form-select:focus, body.dark-theme .form-control:focus {
+        background-color: var(--card-bg-dark);
+        color: var(--body-color-dark);
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+    }
+
+    .table {
+      margin-top: 1rem !important;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .table thead th {
+      font-weight: 600;
+      background-color: var(--card-bg-light);
+      border-bottom-width: 1px;
+    }
+    body.dark-theme .table thead th {
+      background-color: var(--card-bg-dark);
+      border-color: var(--card-border-dark);
+    }
+    .table tbody tr:nth-child(odd) {
+        background-color: rgba(0,0,0,0.02);
+    }
+    body.dark-theme .table tbody tr:nth-child(odd) {
+        background-color: rgba(255,255,255,0.03);
+    }
+    .table tbody tr:hover {
+      background-color: rgba(0, 123, 255, 0.07);
+      cursor: pointer;
+    }
+    body.dark-theme .table tbody tr:hover {
+      background-color: rgba(var(--bs-primary-rgb), 0.15);
+    }
+    .table td, .table th {
+        padding: 0.9rem;
+        vertical-align: middle;
+    }
+
+    #paginationControls button {
+      min-width: 45px;
+      font-weight: 500;
+      transition: background-color var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
+      border-radius: 0.375rem;
+    }
+    #paginationControls .btn-outline-primary {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+    body.dark-theme #paginationControls .btn-outline-primary {
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+    }
+    #paginationControls .btn-outline-primary:hover {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    body.dark-theme #paginationControls .btn-outline-primary:hover {
+      background-color: var(--accent-color);
+      color: var(--body-bg-dark);
+    }
+    #paginationControls .btn-primary {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+      font-weight: 600;
+    }
+    body.dark-theme #paginationControls .btn-primary {
+      background-color: var(--accent-color);
+      border-color: var(--accent-color);
+      color: var(--body-bg-dark);
+    }
+    #paginationControls span {
+      line-height: 38px; /* Match button height */
+      padding: 0 0.5rem;
+      color: var(--text-muted-light);
+    }
+    body.dark-theme #paginationControls span {
+      color: var(--text-muted-dark);
+    }
+
+    .modal-content {
+        background-color: var(--card-bg-light);
+        border-radius: 0.5rem;
+    }
+    body.dark-theme .modal-content {
+        background-color: var(--card-bg-dark);
+    }
+    .modal-header {
+        border-bottom-color: var(--card-border-light);
+    }
+    body.dark-theme .modal-header {
+        border-bottom-color: var(--card-border-dark);
+    }
+    .modal-header .btn-close {
+        filter: var(--bs-btn-close-white-filter); /* For dark headers */
+    }
+    body.dark-theme .modal-header.bg-dark .btn-close {
+        filter: invert(1) grayscale(100%) brightness(200%);
+    }
+    #jsonView {
+        background-color: var(--body-bg-light) !important; /* Override inline */
+        color: var(--body-color-light) !important; /* Override inline */
+        border: 1px solid var(--card-border-light);
+        border-radius: 0.375rem;
+        padding: 1rem !important;
+        font-family: monospace;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+    body.dark-theme #jsonView {
+        background-color: var(--body-bg-dark) !important;
+        color: var(--body-color-dark) !important;
+        border-color: var(--card-border-dark);
+    }
+
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+        border-width: .3em;
+    }
+
+    /* Custom scrollbar for webkit browsers */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--body-bg-light);
+    }
+    body.dark-theme ::-webkit-scrollbar-track {
+      background: var(--body-bg-dark);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+    }
+    body.dark-theme ::-webkit-scrollbar-thumb {
+      background: #4a4a6a;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+    body.dark-theme ::-webkit-scrollbar-thumb:hover {
+      background: #6a6a8a;
+    }
+
+    /* Accessibility: Focus visible */
+    :focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb),0.25);
+    }
+    body.dark-theme :focus-visible {
+        outline-color: var(--accent-color);
+        box-shadow: 0 0 0 0.25rem rgba(var(--bs-accent-rgb),0.5); /* Need to define --bs-accent-rgb if not available */
     }
 
     canvas {
       width: 100% !important;
-      max-height: 300px;
+      max-height: 320px; /* Increased slightly */
     }
+
   </style>
 </head>
 <body class="p-4">
 
   <!-- Header -->
-  <div class="header-section text-center position-relative">
-    <h1 class="fw-bold"><i class="bi bi-shield-lock-fill me-2"></i>Cyber Threat Intelligence Dashboard</h1>
-    <p class="text-white-50 fs-5 mb-0">
+  <header class="header-section">
+    <h1 class="fw-bold"><i class="bi bi-shield-check me-2"></i>Cyber Threat Intelligence Dashboard</h1>
+    <p class="mb-0">
       Real-time indicators from AbuseIPDB, OTX, VirusTotal & MalwareBazaar
     </p>
 
     <!-- Theme Toggle with Icon -->
-    <div class="form-check form-switch text-end">
-      <input class="form-check-input" type="checkbox" id="themeToggle" onchange="toggleTheme()">
-      <label class="form-check-label text-white" for="themeToggle">
+    <div class="form-check form-switch theme-toggle-switch">
+      <input class="form-check-input" type="checkbox" id="themeToggle" onchange="toggleTheme()" title="Toggle theme">
+      <label class="form-check-label" for="themeToggle">
         <i id="themeIcon" class="bi bi-sun-fill"></i>
       </label>
     </div>
-  </div>
+  </header>
 
   <!-- Stats Row -->
-  <div class="row g-3 mb-4 text-center" id="statsRow">
-    <div class="col-md-3">
-      <div class="card shadow-sm border-0" id="cardTotal">
+  <section class="row g-4 mb-4 text-center" id="statsRow">
+    <div class="col-lg-3 col-md-6">
+      <div class="card shadow-sm stats-card" id="cardTotal">
         <div class="card-body">
           <h6>Total Indicators</h6>
           <h4 id="totalCount" class="fw-bold">0</h4>
         </div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card shadow-sm border-0" id="cardHigh">
+    <div class="col-lg-3 col-md-6">
+      <div class="card shadow-sm stats-card" id="cardHigh">
         <div class="card-body">
           <h6>High Severity</h6>
-          <h4 id="highCount" class="fw-bold">0</h4>
+          <h4 id="highCount" class="fw-bold text-danger">0</h4>
         </div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card shadow-sm border-0" id="cardSource">
+    <div class="col-lg-3 col-md-6">
+      <div class="card shadow-sm stats-card" id="cardSource">
         <div class="card-body">
           <h6>Sources</h6>
-          <h4 id="sourceCount" class="fw-bold">0</h4>
+          <h4 id="sourceCount" class="fw-bold text-info">0</h4>
         </div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card shadow-sm border-0" id="cardUpdated">
+    <div class="col-lg-3 col-md-6">
+      <div class="card shadow-sm stats-card" id="cardUpdated">
         <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start">
+          <div class="d-flex justify-content-between align-items-center h-100">
             <div>
               <h6>Last Updated</h6>
               <h4 id="lastUpdated" class="fw-bold">--</h4>
             </div>
-            <button class="btn btn-sm btn-light mt-1" onclick="loadData()" title="Refresh">
-              <i class="bi bi-arrow-clockwise"></i>
+            <button class="btn btn-sm btn-light ms-2" onclick="loadData()" title="Refresh Data">
+              <i class="bi bi-arrow-clockwise fs-5"></i>
             </button>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Filters & Charts -->
-  <div class="row g-4 mb-4">
-    <div class="col-md-4">
-      <div class="card shadow-sm h-100">
+  <!-- Main Content Area: Filters, Charts, Lookup -->
+  <section class="row g-4 mb-4">
+    <!-- Filters Column -->
+    <div class="col-lg-4 col-md-12">
+      <div class="card shadow-sm">
         <div class="card-header bg-primary text-white">
-          <strong><i class="bi bi-funnel-fill me-1"></i>Filters</strong>
+          <strong><i class="bi bi-funnel-fill me-2"></i>Filters</strong>
         </div>
         <div class="card-body">
-          <label for="severityFilter" class="form-label">Severity</label>
-          <select id="severityFilter" class="form-select mb-3" onchange="saveFilters(); loadData()">
-            <option value="">All</option>
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
-          </select>
-
-          <label for="sourceFilter" class="form-label">Source</label>
-          <select id="sourceFilter" class="form-select mb-3" onchange="saveFilters(); loadData()">
-            <option value="">All</option>
-            <option value="AbuseIPDB">AbuseIPDB</option>
-            <option value="OTX">OTX</option>
-            <option value="VirusTotal">VirusTotal</option>
-            <option value="MalwareBazaar">MalwareBazaar</option>
-          </select>
+          <div class="mb-3">
+            <label for="severityFilter" class="form-label">Severity</label>
+            <select id="severityFilter" class="form-select" onchange="saveFilters(); loadData()" aria-label="Filter by severity">
+              <option value="">All Severities</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+          <div>
+            <label for="sourceFilter" class="form-label">Source</label>
+            <select id="sourceFilter" class="form-select" onchange="saveFilters(); loadData()" aria-label="Filter by source">
+              <option value="">All Sources</option>
+              <option value="AbuseIPDB">AbuseIPDB</option>
+              <option value="OTX">OTX</option>
+              <option value="VirusTotal">VirusTotal</option>
+              <option value="MalwareBazaar">MalwareBazaar</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Charts -->
-    <div class="col-md-8" id="chartCard">
-      <div class="card shadow-sm h-100">
+    <!-- Charts Column -->
+    <div class="col-lg-8 col-md-12" id="chartCardContainer">
+      <div class="card shadow-sm">
         <div class="card-header bg-success text-white">
-          <strong><i class="bi bi-graph-up-arrow me-1"></i>Visualizations</strong>
+          <strong><i class="bi bi-pie-chart-fill me-2"></i>Threat Visualizations</strong>
         </div>
         <div class="card-body">
-          <canvas id="sourceChart" class="mb-4"></canvas>
-          <canvas id="severityChart"></canvas>
+          <div class="row">
+            <div class="col-md-6 mb-4 mb-md-0">
+                <canvas id="sourceChart"></canvas>
+            </div>
+            <div class="col-md-6">
+                <canvas id="severityChart"></canvas>
+            </div>
+          </div>
         </div>
       </div>
     </div>
+  </section>
 
-    <div class="card mt-4 shadow-sm" id="vtLookupSection">
-      <div class="card-header bg-warning text-dark">
-        <strong><i class="bi bi-search me-1"></i> VirusTotal IP Lookup</strong>
-      </div>
-      <div class="card-body">
-        <div class="input-group">
-          <input type="text" id="vtIpInput" class="form-control" placeholder="Enter IP address">
-          <button class="btn btn-outline-primary" onclick="lookupVTIp()">Lookup</button>
+  <!-- VirusTotal Lookup Section -->
+  <section class="row g-4 mb-4">
+      <div class="col-12">
+        <div class="card shadow-sm" id="vtLookupSection">
+          <div class="card-header bg-warning text-dark">
+            <strong><i class="bi bi-search me-2"></i>VirusTotal IP Lookup</strong>
+          </div>
+          <div class="card-body">
+            <div class="input-group">
+              <input type="text" id="vtIpInput" class="form-control" placeholder="Enter IP address to lookup on VirusTotal" aria-label="VirusTotal IP Lookup">
+              <button class="btn btn-outline-primary" onclick="lookupVTIp()">Lookup IP</button>
+            </div>
+            <div id="vtResult" class="mt-3 p-3 border rounded small" style="min-height: 50px;"></div>
+          </div>
         </div>
-        <div id="vtResult" class="mt-3 small"></div>
+      </div>
+  </section>
+
+  <!-- Data Table Section -->
+  <section class="card shadow-sm mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <strong><i class="bi bi-table me-2"></i>Threat Indicators</strong>
+      <input type="text" id="searchInput" class="form-control" placeholder="Search indicators..." style="max-width: 280px;" oninput="renderTablePage()" aria-label="Search threat indicators" />
+    </div>
+    <div class="card-body p-0">
+      <!-- Loading Spinner -->
+      <div id="loadingSpinner" class="text-center my-5 py-5" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 mb-0">Loading threat data...</p>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Indicator</th>
+              <th>Severity</th>
+              <th>Source</th>
+            </tr>
+          </thead>
+          <tbody id="cti-table-body"></tbody>
+        </table>
       </div>
     </div>
-    
-  </div>
-
-  <!-- Loading Spinner -->
-  <div id="loadingSpinner" class="text-center mb-4" style="display: none;">
-    <div class="spinner-border text-primary" role="status"></div>
-    <p class="mt-2">Loading threat data...</p>
-  </div>
-
-  <!-- Search Input -->
-  <div class="mb-3 d-flex justify-content-end">
-    <input type="text" id="searchInput" class="form-control" placeholder="Search indicator (IP, hash...)" style="max-width: 300px;" oninput="renderTablePage()" />
-  </div>
-
-
-  <!-- Table -->
-  <table class="table table-bordered table-hover" style="margin-top: -1rem;">
-    <thead>
-      <tr>
-        <th>Indicator</th>
-        <th>Severity</th>
-        <th>Source</th>
-      </tr>
-    </thead>
-    <tbody id="cti-table-body"></tbody>
-  </table>
-
-  <!-- Pagination Controls -->
-  <div class="card mt-3 border-0 shadow-sm">
-    <div class="card-body p-3">
-      <div id="paginationControls" class="d-flex flex-wrap gap-2 justify-content-center"></div>
-      <div id="pageIndicator" class="text-center mt-2 small text-muted"></div>
+    <div class="card-footer bg-transparent">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div id="pageIndicator" class="small text-muted"></div>
+            <div id="paginationControls" class="d-flex flex-wrap gap-2 justify-content-center"></div>
+            <div class="d-flex align-items-center gap-2">
+                <label for="jumpPage" class="form-label small mb-0">Jump:</label>
+                <input type="number" id="jumpPage" min="1" style="width: 75px;" class="form-control form-control-sm d-inline-block" aria-label="Jump to page number" />
+                <button onclick="jumpToPage()" class="btn btn-sm btn-outline-secondary">Go</button>
+            </div>
+        </div>
     </div>
-  </div>
-  
-  <div class="mt-2 text-center">
-    <label for="jumpPage" class="form-label small me-2">Jump to page:</label>
-    <input type="number" id="jumpPage" min="1" style="width: 70px;" class="form-control d-inline-block" />
-    <button onclick="jumpToPage()" class="btn btn-sm btn-outline-primary ms-1">Go</button>
-  </div>
-
+  </section>
 
   <!-- Bootstrap Toast for API errors -->
-  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1056">
     <div id="errorToast" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
       <div class="d-flex">
         <div class="toast-body" id="toastMessage">
@@ -287,31 +514,33 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
   <!-- Indicator Detail Modal -->
   <div class="modal fade" id="indicatorModal" tabindex="-1" aria-labelledby="indicatorModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header bg-dark text-white">
-          <h5 class="modal-title" id="indicatorModalLabel">Indicator Details</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <h5 class="modal-title" id="indicatorModalLabel"><i class="bi bi-info-circle-fill me-2"></i>Indicator Details</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close modal"></button>
         </div>
-        <div class="modal-body">
-          <div class="mb-2">
-            <strong>Severity:</strong>
-            <span id="riskBar" class="badge"></span>
+        <div class="modal-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <strong>Severity:</strong>
+                <span id="riskBar" class="badge fs-6 ms-2"></span>
+            </div>
+            <div>
+                <button class="btn btn-sm btn-outline-secondary me-2" onclick="copyToClipboard()" title="Copy details as JSON"><i class="bi bi-clipboard-check me-1"></i>Copy JSON</button>
+                <a id="vtLink" class="btn btn-sm btn-outline-primary" target="_blank" style="display:none;"><i class="bi bi-box-arrow-up-right me-1"></i>View on VirusTotal</a>
+            </div>
           </div>
-          <div class="mb-3">
-            <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard()">📋 Copy JSON</button>
-            <a id="vtLink" class="btn btn-sm btn-outline-primary ms-2" target="_blank" style="display:none;">🔗 View on VirusTotal</a>
-          </div>
-          <pre id="jsonView" class="bg-light text-dark p-2 rounded small"></pre>
+          <pre id="jsonView" class="p-3 rounded small"></pre>
         </div>
       </div>
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
   <script src="scripts.js"></script>
 </body>
 </html>
+

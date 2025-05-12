@@ -6,309 +6,424 @@ let allCTIData = [];
 let currentPage = 1;
 const rowsPerPage = 25;
 
-function loadData() {
-  document.getElementById("severityFilter").value = localStorage.getItem("selectedSeverity") || "";
-  document.getElementById("sourceFilter").value = localStorage.getItem("selectedSource") || "";
+// Chart instances
+let sourceChartInstance = null;
+let severityChartInstance = null;
 
-  const severity = document.getElementById("severityFilter").value;
-  const source = document.getElementById("sourceFilter").value;
+/**
+ * Fetches CTI data from the backend and updates the dashboard.
+ */
+function loadData() {
+  const severityFilter = document.getElementById("severityFilter");
+  const sourceFilter = document.getElementById("sourceFilter");
+
+  // Load saved filters
+  if (severityFilter) severityFilter.value = localStorage.getItem("selectedSeverity") || "";
+  if (sourceFilter) sourceFilter.value = localStorage.getItem("selectedSource") || "";
+
+  const severity = severityFilter ? severityFilter.value : "";
+  const source = sourceFilter ? sourceFilter.value : "";
+  
   const url = new URL("https://cti-dashboard-9j95.onrender.com/cti-data");
 
   const spinner = document.getElementById("loadingSpinner");
-  const chartCard = document.getElementById("chartCard");
+  const chartCardContainer = document.getElementById("chartCardContainer"); // Changed from chartCard
 
-  spinner.style.display = "block";
-  chartCard.style.display = "none";
+  if (spinner) spinner.style.display = "block";
+  if (chartCardContainer) chartCardContainer.style.display = "none"; // Hide the whole container
 
   if (severity) url.searchParams.append("severity", severity);
   if (source) url.searchParams.append("source", source);
 
-  if (window.sourceChartInstance) window.sourceChartInstance.destroy();
-  if (window.severityChartInstance) window.severityChartInstance.destroy();
+  // Destroy existing charts before redrawing
+  if (sourceChartInstance) sourceChartInstance.destroy();
+  if (severityChartInstance) severityChartInstance.destroy();
 
   fetch(url)
-    .then(res => res.json())
+    .then(res => {
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+    })
     .then(data => {
-      spinner.style.display = "none";
-      chartCard.style.display = "block";
+      if (spinner) spinner.style.display = "none";
+      if (chartCardContainer) chartCardContainer.style.display = "block";
 
       allCTIData = data.data || [];
       currentPage = 1;
       renderTablePage();
-
-      const isDark = localStorage.getItem("theme") === "dark";
-      const labelColor = isDark ? "#ffffff" : "#000000";
-      const bgColors = isDark
-        ? ["#ff6384", "#36a2eb", "#ffcd56", "#4bc0c0", "#9966ff"]
-        : ["#dc3545", "#ffc107", "#0d6efd", "#20c997", "#6f42c1"];
-
-      const sourceCount = {};
-      const severityCount = {};
-      data.data.forEach(entry => {
-        sourceCount[entry.source] = (sourceCount[entry.source] || 0) + 1;
-        severityCount[entry.severity] = (severityCount[entry.severity] || 0) + 1;
-      });
-
-      window.sourceChartInstance = new Chart(document.getElementById("sourceChart").getContext("2d"), {
-        type: "pie",
-        data: {
-          labels: Object.keys(sourceCount),
-          datasets: [{
-            label: "Threats by Source",
-            data: Object.values(sourceCount),
-            backgroundColor: bgColors
-          }]
-        },
-        options: {
-          animation: { duration: 1000, easing: "easeOutQuart" },
-          plugins: { legend: { labels: { color: labelColor } } }
-        }
-      });
-
-      window.severityChartInstance = new Chart(document.getElementById("severityChart").getContext("2d"), {
-        type: "bar",
-        data: {
-          labels: Object.keys(severityCount),
-          datasets: [{
-            label: "Indicators by Severity",
-            data: Object.values(severityCount),
-            backgroundColor: Object.keys(severityCount).map(level =>
-              level === "High" ? "#dc3545" : level === "Medium" ? "#ffc107" : "#0d6efd"
-            )
-          }]
-        },
-        options: {
-          animation: { duration: 1000, easing: "easeOutQuart" },
-          responsive: true,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                stepSize: 1,
-                color: labelColor  // ✅ dynamically uses white in dark mode
-              },
-              grid: {
-                color: isDark ? "#555" : "#ccc",  // ✅ line color for grid
-              },
-              title: {
-                display: true,
-                text: "Number of Indicators",
-                color: labelColor,
-                font: { size: 14, weight: "bold" }
-              }
-            },
-            x: {
-              ticks: {
-                color: labelColor
-              },
-              grid: {
-                color: isDark ? "#555" : "#ccc"  // ✅ horizontal lines
-              },
-              title: {
-                display: true,
-                text: "Severity Level",
-                color: labelColor,
-                font: { size: 14, weight: "bold" }
-              }
-            }
-          }          
-        }
-      });
+      updateCharts(data.data || []);
 
       if (data.errors && data.errors.length > 0) {
-        const msg = `⚠️ The following sources failed or hit limits: ${data.errors.join(", ")}`;
-        document.getElementById("toastMessage").textContent = msg;
-        const toastEl = document.getElementById("errorToast");
-        new bootstrap.Toast(toastEl).show();
+        const msg = `⚠️ Some sources failed or had issues: ${data.errors.join(", ")}`;
+        showToast(msg, "danger");
       }
-      
     })
     .catch(error => {
       console.error("Error fetching CTI data:", error);
-      document.getElementById("cti-table-body").innerHTML =
-        "<tr><td colspan='3' class='text-center text-danger'>Failed to load data</td></tr>";
-      updateStats(0, 0, 0);
+      if (spinner) spinner.style.display = "none";
+      const tbody = document.getElementById("cti-table-body");
+      if (tbody) {
+        tbody.innerHTML =
+        "<tr><td colspan=\"3\" class=\"text-center text-danger p-4\"><i class=\"bi bi-exclamation-triangle-fill me-2\"></i>Failed to load threat data. Please try refreshing.</td></tr>";
+      }
+      updateStats(0, 0, 0); // Reset stats
+      showToast("Failed to load CTI data. Check console for details.", "danger");
     });
 }
 
+/**
+ * Updates the charts with new data.
+ * @param {Array} data - The CTI data array.
+ */
+function updateCharts(data) {
+    const isDark = document.body.classList.contains("dark-theme");
+    const labelColor = isDark ? getComputedStyle(document.documentElement).getPropertyValue("--body-color-dark").trim() : getComputedStyle(document.documentElement).getPropertyValue("--body-color-light").trim();
+    const gridColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)";
+
+    const sourceCtx = document.getElementById("sourceChart")?.getContext("2d");
+    const severityCtx = document.getElementById("severityChart")?.getContext("2d");
+
+    if (!sourceCtx || !severityCtx) return;
+
+    const sourceCounts = {};
+    const severityCounts = {};
+    data.forEach(entry => {
+        sourceCounts[entry.source] = (sourceCounts[entry.source] || 0) + 1;
+        severityCounts[entry.severity] = (severityCounts[entry.severity] || 0) + 1;
+    });
+
+    const chartFont = {
+        family: "Inter, sans-serif",
+        size: 12
+    };
+
+    sourceChartInstance = new Chart(sourceCtx, {
+        type: "pie",
+        data: {
+            labels: Object.keys(sourceCounts),
+            datasets: [{
+                label: "Threats by Source",
+                data: Object.values(sourceCounts),
+                backgroundColor: [
+                    getComputedStyle(document.documentElement).getPropertyValue("--bs-primary").trim(),
+                    getComputedStyle(document.documentElement).getPropertyValue("--bs-success").trim(),
+                    getComputedStyle(document.documentElement).getPropertyValue("--bs-info").trim(),
+                    getComputedStyle(document.documentElement).getPropertyValue("--bs-warning").trim(),
+                    getComputedStyle(document.documentElement).getPropertyValue("--bs-danger").trim(),
+                ],
+                borderColor: isDark ? getComputedStyle(document.documentElement).getPropertyValue("--card-bg-dark").trim() : getComputedStyle(document.documentElement).getPropertyValue("--card-bg-light").trim(),
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 800, easing: "easeOutQuart" },
+            plugins: {
+                legend: { 
+                    position: "bottom",
+                    labels: { 
+                        color: labelColor,
+                        font: chartFont,
+                        padding: 15
+                    }
+                },
+                tooltip: {
+                    titleFont: chartFont,
+                    bodyFont: chartFont,
+                    footerFont: chartFont
+                }
+            }
+        }
+    });
+
+    severityChartInstance = new Chart(severityCtx, {
+        type: "bar",
+        data: {
+            labels: Object.keys(severityCounts),
+            datasets: [{
+                label: "Indicators by Severity",
+                data: Object.values(severityCounts),
+                backgroundColor: Object.keys(severityCounts).map(level => {
+                    if (level === "High") return getComputedStyle(document.documentElement).getPropertyValue("--danger-color").trim();
+                    if (level === "Medium") return getComputedStyle(document.documentElement).getPropertyValue("--warning-color").trim();
+                    return getComputedStyle(document.documentElement).getPropertyValue("--info-color").trim();
+                }),
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 800, easing: "easeOutQuart" },
+            plugins: { 
+                legend: { display: false },
+                tooltip: {
+                    titleFont: chartFont,
+                    bodyFont: chartFont,
+                    footerFont: chartFont
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: labelColor, font: chartFont, stepSize: Math.max(1, Math.ceil(Math.max(...Object.values(severityCounts))/5 || 1)) },
+                    grid: { color: gridColor },
+                    title: {
+                        display: true,
+                        text: "Number of Indicators",
+                        color: labelColor,
+                        font: { ...chartFont, weight: "600", size: 13 }
+                    }
+                },
+                x: {
+                    ticks: { color: labelColor, font: chartFont },
+                    grid: { display: false }, // Cleaner look for bar chart x-axis
+                    title: {
+                        display: true,
+                        text: "Severity Level",
+                        color: labelColor,
+                        font: { ...chartFont, weight: "600", size: 13 }
+                    }
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Renders a single page of the CTI data table and pagination controls.
+ */
 function renderTablePage() {
-  const searchValue = document.getElementById("searchInput")?.value.toLowerCase() || "";
+  const searchInput = document.getElementById("searchInput");
+  const searchValue = searchInput ? searchInput.value.toLowerCase() : "";
+  
   const filteredData = allCTIData.filter(item =>
-    item.indicator.toLowerCase().includes(searchValue)
+    item.indicator.toLowerCase().includes(searchValue) ||
+    item.source.toLowerCase().includes(searchValue) ||
+    item.type.toLowerCase().includes(searchValue)
   );
 
   const tbody = document.getElementById("cti-table-body");
-  const pagination = document.getElementById("paginationControls");
-  tbody.innerHTML = "";
-  pagination.innerHTML = "";
+  const paginationControls = document.getElementById("paginationControls");
+  const pageIndicator = document.getElementById("pageIndicator");
+  
+  if (!tbody || !paginationControls || !pageIndicator) return;
+
+  tbody.innerHTML = ""; // Clear existing rows
+  paginationControls.innerHTML = ""; // Clear existing pagination
+
+  if (filteredData.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="3" class="text-center p-4"><i class="bi bi-search me-2"></i>No indicators found matching your criteria.</td></tr>`;
+    pageIndicator.textContent = "Showing 0 of 0 results";
+    updateStats(0,0,0);
+    return;
+  }
 
   const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+  currentPage = Math.min(currentPage, totalPages); // Ensure currentPage is not out of bounds
+  if (currentPage < 1) currentPage = 1;
+
   const start = (currentPage - 1) * rowsPerPage;
   const end = start + rowsPerPage;
   const pageData = filteredData.slice(start, end);
 
-  const isDark = localStorage.getItem("theme") === "dark";
-
   pageData.forEach(entry => {
-    const row = document.createElement("tr");
-    const severityBadge = {
-      High: `<span class='badge bg-danger'>High</span>`,
-      Medium: `<span class='badge bg-warning text-dark'>Medium</span>`,
-      Low: `<span class='badge bg-info text-dark'>Low</span>`
-    }[entry.severity] || `<span class='badge bg-secondary'>Unknown</span>`;
+    const row = tbody.insertRow();
+    row.setAttribute("role", "button");
+    row.setAttribute("tabindex", "0");
+    row.setAttribute("aria-label", `View details for indicator ${entry.indicator}`);
+    row.onclick = () => showIndicatorModal(entry);
+    row.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") showIndicatorModal(entry); };
 
-    const detailsRowId = `details-${entry.indicator.replace(/[^a-zA-Z0-9]/g, "")}`;
+    let severityBadgeHtml = "";
+    switch (entry.severity) {
+      case "High":
+        severityBadgeHtml = `<span class=\"badge bg-danger text-white rounded-pill px-2 py-1\"><i class=\"bi bi-shield-fill-exclamation me-1\"></i>High</span>`;
+        break;
+      case "Medium":
+        severityBadgeHtml = `<span class=\"badge bg-warning text-dark rounded-pill px-2 py-1\"><i class=\"bi bi-shield-fill-half me-1\"></i>Medium</span>`;
+        break;
+      case "Low":
+        severityBadgeHtml = `<span class=\"badge bg-info text-dark rounded-pill px-2 py-1\"><i class=\"bi bi-shield-fill-check me-1\"></i>Low</span>`;
+        break;
+      default:
+        severityBadgeHtml = `<span class=\"badge bg-secondary text-white rounded-pill px-2 py-1\"><i class=\"bi bi-shield-slash me-1\"></i>${entry.severity || "Unknown"}</span>`;
+    }
+
     row.innerHTML = `
-      <td class="fw-bold text-decoration-underline" style="cursor:pointer;" onclick='showIndicatorModal(${JSON.stringify(entry)})'>
-        <i class="bi bi-info-circle me-1 text-primary"></i>${entry.indicator}
+      <td class="fw-medium">
+        <i class="bi bi-search me-2 text-primary opacity-75"></i>${entry.indicator}
+        <span class="d-block small text-muted fst-italic">Type: ${entry.type}</span>
       </td>
-
-      <td>${severityBadge}</td>
+      <td>${severityBadgeHtml}</td>
       <td>${entry.source}</td>
     `;
-    tbody.appendChild(row);
-
-    const detailsRow = document.createElement("tr");
-    detailsRow.id = detailsRowId;
-    detailsRow.style.display = "none";
-    detailsRow.innerHTML = `
-      <td colspan="3">
-        <div class="p-2 rounded small fw-normal ${isDark ? 'bg-dark text-light border-secondary' : 'bg-light text-dark border'}">
-          <strong>Type:</strong> ${entry.type} <br/>
-          <strong>Categories:</strong> ${entry.categories.join(", ")} <br/>
-          <strong>Reported At:</strong> ${entry.reported_at}
-        </div>
-      </td>
-    `;
-    tbody.appendChild(detailsRow);
   });
 
-  const createPageBtn = (label, page, active = false, disabled = false) => {
-    const btn = document.createElement("button");
-    btn.className = `btn btn-sm ${active ? "btn-primary" : "btn-outline-primary"} me-1`;
-    btn.textContent = label;
-    if (disabled) btn.disabled = true;
-    btn.onclick = () => {
-      currentPage = page;
-      renderTablePage();
-    };
-    return btn;
-  };
-
-  pagination.appendChild(createPageBtn("« First", 1, false, currentPage === 1));
-  for (let i = 1; i <= totalPages; i++) {
-    if (i === 1 || i === totalPages || Math.abs(i - currentPage) <= 2) {
-      pagination.appendChild(createPageBtn(i, i, i === currentPage));
-    } else if (i === 2 || i === totalPages - 1) {
-      const dots = document.createElement("span");
-      dots.className = "text-muted me-2";
-      dots.textContent = "...";
-      pagination.appendChild(dots);
+  // Pagination logic
+  const maxPagesToShow = 5;
+  let startPage, endPage;
+  if (totalPages <= maxPagesToShow) {
+    startPage = 1;
+    endPage = totalPages;
+  } else {
+    const maxPagesBeforeCurrent = Math.floor(maxPagesToShow / 2);
+    const maxPagesAfterCurrent = Math.ceil(maxPagesToShow / 2) - 1;
+    if (currentPage <= maxPagesBeforeCurrent) {
+      startPage = 1;
+      endPage = maxPagesToShow;
+    } else if (currentPage + maxPagesAfterCurrent >= totalPages) {
+      startPage = totalPages - maxPagesToShow + 1;
+      endPage = totalPages;
+    } else {
+      startPage = currentPage - maxPagesBeforeCurrent;
+      endPage = currentPage + maxPagesAfterCurrent;
     }
   }
-  pagination.appendChild(createPageBtn("Last »", totalPages, false, currentPage === totalPages));
 
-  const pageIndicator = document.getElementById("pageIndicator");
-  pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
+  // First & Previous
+  if (currentPage > 1) {
+    paginationControls.appendChild(createPageBtn("« First", 1, false, false, "Go to first page"));
+    paginationControls.appendChild(createPageBtn("‹ Prev", currentPage - 1, false, false, "Go to previous page"));
+  }
 
-  // ✅ Update stats based on filtered data
-  const total = filteredData.length;
-  const highSeverity = filteredData.filter(d => d.severity === "High").length;
+  // Page numbers
+  if (startPage > 1) {
+    paginationControls.appendChild(createPageBtn("1", 1, false, false, "Go to page 1"));
+    if (startPage > 2) {
+        const dots = document.createElement("span");
+        dots.className = "px-2 text-muted";
+        dots.textContent = "...";
+        paginationControls.appendChild(dots);
+    }
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    paginationControls.appendChild(createPageBtn(i, i, i === currentPage, false, `Go to page ${i}`));
+  }
+
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) {
+        const dots = document.createElement("span");
+        dots.className = "px-2 text-muted";
+        dots.textContent = "...";
+        paginationControls.appendChild(dots);
+    }
+    paginationControls.appendChild(createPageBtn(totalPages, totalPages, false, false, `Go to page ${totalPages}`));
+  }
+  
+  // Next & Last
+  if (currentPage < totalPages) {
+    paginationControls.appendChild(createPageBtn("Next ›", currentPage + 1, false, false, "Go to next page"));
+    paginationControls.appendChild(createPageBtn("Last »", totalPages, false, false, "Go to last page"));
+  }
+
+  pageIndicator.textContent = `Showing ${start + 1}-${Math.min(end, filteredData.length)} of ${filteredData.length} results (Page ${currentPage} of ${totalPages})`;
+  document.getElementById("jumpPage").max = totalPages;
+
+  // Update summary stats based on filtered data
+  const highSeverityCount = filteredData.filter(d => d.severity === "High").length;
   const uniqueSources = new Set(filteredData.map(d => d.source)).size;
-  updateStats(total, highSeverity, uniqueSources);
+  updateStats(filteredData.length, highSeverityCount, uniqueSources);
 }
 
-
-function toggleDetails(id, cell) {
-  const row = document.getElementById(id);
-  const icon = cell.querySelector(".toggle-icon");
-  if (row.style.display === "none") {
-    row.style.display = "table-row";
-    icon.classList.replace("bi-chevron-right", "bi-chevron-down");
-  } else {
-    row.style.display = "none";
-    icon.classList.replace("bi-chevron-down", "bi-chevron-right");
-  }
+/**
+ * Creates a pagination button.
+ * @param {String|Number} label - The button text.
+ * @param {Number} page - The page number this button links to.
+ * @param {Boolean} active - Whether this is the current page.
+ * @param {Boolean} disabled - Whether the button is disabled.
+ * @param {String} ariaLabel - ARIA label for the button.
+ * @returns {HTMLButtonElement} The created button element.
+ */
+function createPageBtn(label, page, active = false, disabled = false, ariaLabel = "") {
+  const btn = document.createElement("button");
+  btn.className = `btn btn-sm ${active ? "btn-primary" : "btn-outline-primary"}`;
+  btn.textContent = label;
+  if (disabled) btn.disabled = true;
+  if (ariaLabel) btn.setAttribute("aria-label", ariaLabel);
+  btn.onclick = () => {
+    currentPage = page;
+    renderTablePage();
+    document.getElementById("cti-table-body").focus(); // Focus back to table for screen readers
+  };
+  return btn;
 }
 
-function toggleAutoRefresh() {
-  const toggle = document.getElementById("autoRefreshToggle");
-  const timerDisplay = document.getElementById("countdownTimer");
-
-  if (toggle.checked) {
-    countdown = 30;
-    timerDisplay.style.display = "block";
-    timerDisplay.textContent = `Refreshing in: ${countdown}s`;
-
-    countdownTimer = setInterval(() => {
-      countdown--;
-      timerDisplay.textContent = `Refreshing in: ${countdown}s`;
-      if (countdown <= 0) {
-        loadData();
-        countdown = 30;
-      }
-    }, 1000);
-  } else {
-    clearInterval(countdownTimer);
-    timerDisplay.style.display = "none";
-  }
-}
-
+/**
+ * Saves current filter selections to localStorage.
+ */
 function saveFilters() {
-  localStorage.setItem("selectedSeverity", document.getElementById("severityFilter").value);
-  localStorage.setItem("selectedSource", document.getElementById("sourceFilter").value);
+  const severityFilter = document.getElementById("severityFilter");
+  const sourceFilter = document.getElementById("sourceFilter");
+  if (severityFilter) localStorage.setItem("selectedSeverity", severityFilter.value);
+  if (sourceFilter) localStorage.setItem("selectedSource", sourceFilter.value);
 }
 
+/**
+ * Updates the statistics cards with animated counts.
+ * @param {Number} total - Total indicators count.
+ * @param {Number} high - High severity indicators count.
+ * @param {Number} sources - Unique sources count.
+ */
 function updateStats(total, high, sources) {
-  document.getElementById("lastUpdated").textContent = new Date().toLocaleTimeString();
-  const totalCounter = new CountUp("totalCount", total, { startVal: 0 });
-  const highCounter = new CountUp("highCount", high, { startVal: 0 });
-  const sourceCounter = new CountUp("sourceCount", sources, { startVal: 0 });
+  const lastUpdatedEl = document.getElementById("lastUpdated");
+  if (lastUpdatedEl) lastUpdatedEl.textContent = new Date().toLocaleTimeString();
 
-  if (!totalCounter.error) totalCounter.start(); else document.getElementById("totalCount").textContent = total;
-  if (!highCounter.error) highCounter.start(); else document.getElementById("highCount").textContent = high;
-  if (!sourceCounter.error) sourceCounter.start(); else document.getElementById("sourceCount").textContent = sources;
+  const options = { duration: 1.5, useEasing: true, startVal: parseInt(document.getElementById("totalCount").textContent) || 0 };
+  
+  const totalCountEl = document.getElementById("totalCount");
+  if (totalCountEl) new CountUp(totalCountEl, total, options).start();
+  
+  const highCountEl = document.getElementById("highCount");
+  if (highCountEl) new CountUp(highCountEl, high, {...options, startVal: parseInt(highCountEl.textContent) || 0}).start();
+  
+  const sourceCountEl = document.getElementById("sourceCount");
+  if (sourceCountEl) new CountUp(sourceCountEl, sources, {...options, startVal: parseInt(sourceCountEl.textContent) || 0}).start();
 }
 
+/**
+ * Toggles the theme between light and dark mode.
+ */
 function toggleTheme() {
-  const dark = document.getElementById("themeToggle").checked;
-  localStorage.setItem("theme", dark ? "dark" : "light");
+  const isDark = document.getElementById("themeToggle").checked;
+  localStorage.setItem("theme", isDark ? "dark" : "light");
   applyTheme();
-  loadData();
+  // Re-render charts with new theme colors
+  if (allCTIData.length > 0) {
+      updateCharts(allCTIData);
+  }
 }
 
+/**
+ * Applies the current theme (light/dark) to the page.
+ */
 function applyTheme() {
   const isDark = localStorage.getItem("theme") === "dark";
-  document.getElementById("themeToggle").checked = isDark;
+  const themeToggle = document.getElementById("themeToggle");
+  const themeIcon = document.getElementById("themeIcon");
 
-  document.body.classList.toggle("bg-dark", isDark);
-  document.body.classList.toggle("text-light", isDark);
-
-  document.querySelectorAll("table").forEach(tbl => tbl.classList.toggle("table-dark", isDark));
-
-  document.querySelectorAll(".card").forEach(card => {
-    card.classList.remove("bg-light", "bg-dark", "text-light", "text-white", "text-dark");
-    if (isDark) {
-      card.classList.add("bg-dark", "text-white");
-    } else {
-      card.classList.add("bg-light", "text-dark");
-    }
-  });
-
-  document.getElementById("cardTotal").className = "card shadow-sm border-0 " + (isDark ? "bg-primary text-white" : "bg-primary text-white");
-  document.getElementById("cardHigh").className = "card shadow-sm border-0 " + (isDark ? "bg-danger text-white" : "bg-danger text-white");
-  document.getElementById("cardSource").className = "card shadow-sm border-0 " + (isDark ? "bg-info text-white" : "bg-info text-white");
-  document.getElementById("cardUpdated").className = "card shadow-sm border-0 " + (isDark ? "bg-secondary text-white" : "bg-dark text-white");
-
-  document.getElementById("themeIcon").className = isDark ? "bi bi-moon-fill" : "bi bi-sun-fill";
+  if (themeToggle) themeToggle.checked = isDark;
+  document.body.classList.toggle("dark-theme", isDark);
+  
+  if (themeIcon) {
+    themeIcon.className = isDark ? "bi bi-moon-stars-fill" : "bi bi-sun-fill";
+  }
 }
 
+/**
+ * Jumps to a specific page number in the table.
+ */
 function jumpToPage() {
   const input = document.getElementById("jumpPage");
+  if (!input) return;
+
   const totalPages = Math.ceil(allCTIData.filter(item =>
     item.indicator.toLowerCase().includes(
-      document.getElementById("searchInput")?.value.toLowerCase() || ""
+      (document.getElementById("searchInput")?.value || "").toLowerCase()
     )
   ).length / rowsPerPage);
 
@@ -318,100 +433,170 @@ function jumpToPage() {
 
   currentPage = page;
   renderTablePage();
+  input.value = ""; // Clear input after jump
 }
 
+/**
+ * Looks up an IP address using the VirusTotal backend endpoint.
+ */
 function lookupVTIp() {
-  const ip = document.getElementById("vtIpInput").value.trim();
+  const ipInput = document.getElementById("vtIpInput");
   const resultBox = document.getElementById("vtResult");
+  if (!ipInput || !resultBox) return;
+
+  const ip = ipInput.value.trim();
 
   if (!ip) {
-    resultBox.innerHTML = "<div class='text-danger'>❌ Please enter a valid IP address.</div>";
+    resultBox.innerHTML = `<div class="alert alert-warning p-2 small"><i class="bi bi-exclamation-triangle me-1"></i>Please enter a valid IP address.</div>`;
     return;
   }
 
-  resultBox.innerHTML = "<div class='text-muted'>⏳ Fetching from VirusTotal...</div>";
+  resultBox.innerHTML = `<div class="text-muted p-2"><div class="spinner-border spinner-border-sm me-2" role="status"></div>Fetching details for ${ip}...</div>`;
 
   fetch(`https://cti-dashboard-9j95.onrender.com/vt-lookup?ip=${ip}`)
     .then(async res => {
       const data = await res.json();
-
       if (!res.ok) {
-        resultBox.innerHTML = `<div class='text-danger'>❌ ${data.detail || data.error || "Invalid IP or request blocked"}</div>`;
+        resultBox.innerHTML = `<div class="alert alert-danger p-2 small"><i class="bi bi-x-octagon me-1"></i>${data.detail || data.error || "Error looking up IP."}</div>`;
         return;
       }
 
+      let tagsHtml = "Not available";
+      if (data.tags && data.tags.length > 0) {
+          tagsHtml = data.tags.map(tag => `<span class="badge bg-secondary text-white me-1 mb-1">${tag}</span>`).join("");
+      }
+
       resultBox.innerHTML = `
-        <div><strong>IP:</strong> ${ip}</div>
-        <div><strong>Malicious:</strong> ${data.malicious}</div>
-        <div><strong>Suspicious:</strong> ${data.suspicious}</div>
-        <div><strong>Last Seen:</strong> ${data.last_analysis}</div>
-        <div><strong>Tags:</strong> ${data.tags.join(", ")}</div>
-        <div class="mt-2">
-          <a href="https://www.virustotal.com/gui/ip-address/${ip}" target="_blank" class="btn btn-sm btn-outline-secondary">View on VirusTotal</a>
+        <div class="p-2">
+          <p class="mb-1"><strong>IP Address:</strong> ${ip}</p>
+          <p class="mb-1"><strong>Malicious Detections:</strong> <span class="fw-bold ${data.malicious > 0 ? "text-danger" : "text-success"}">${data.malicious}</span></p>
+          <p class="mb-1"><strong>Suspicious Detections:</strong> <span class="fw-bold ${data.suspicious > 0 ? "text-warning" : "text-success"}">${data.suspicious}</span></p>
+          <p class="mb-1"><strong>Last Analysis:</strong> ${data.last_analysis !== "N/A" ? new Date(data.last_analysis).toLocaleString() : "N/A"}</p>
+          <p class="mb-1"><strong>Tags:</strong> ${tagsHtml}</p>
+          <div class="mt-2">
+            <a href="https://www.virustotal.com/gui/ip-address/${ip}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-up-right me-1"></i>View Full Report on VirusTotal</a>
+          </div>
         </div>
       `;
     })
     .catch(err => {
-      console.error(err);
-      resultBox.innerHTML = "<div class='text-danger'>⚠️ Failed to fetch data from the backend.</div>";
+      console.error("VirusTotal lookup error:", err);
+      resultBox.innerHTML = `<div class="alert alert-danger p-2 small"><i class="bi bi-ethernet me-1"></i>Failed to fetch data. The backend might be unavailable.</div>`;
     });
 }
 
-
-
-document.addEventListener("keydown", (e) => {
-  if (!allCTIData.length) return;
-
-  const searchValue = document.getElementById("searchInput")?.value.toLowerCase() || "";
-  const filteredLength = allCTIData.filter(item =>
-    item.indicator.toLowerCase().includes(searchValue)
-  ).length;
-
-  const totalPages = Math.ceil(filteredLength / rowsPerPage);
-  if (e.key === "ArrowLeft" && currentPage > 1) {
-    currentPage--;
-    renderTablePage();
-  } else if (e.key === "ArrowRight" && currentPage < totalPages) {
-    currentPage++;
-    renderTablePage();
-  }
-});
-
+/**
+ * Shows the indicator details modal.
+ * @param {Object} entry - The CTI data entry object.
+ */
 function showIndicatorModal(entry) {
-  const modal = new bootstrap.Modal(document.getElementById("indicatorModal"));
+  const modalElement = document.getElementById("indicatorModal");
+  if (!modalElement) return;
+  const indicatorModal = bootstrap.Modal.getOrCreateInstance(modalElement);
+  
   const jsonBox = document.getElementById("jsonView");
   const riskBar = document.getElementById("riskBar");
   const vtLink = document.getElementById("vtLink");
+  const modalTitle = document.getElementById("indicatorModalLabel");
 
-  jsonBox.textContent = JSON.stringify(entry, null, 2);
+  if (modalTitle) modalTitle.innerHTML = `<i class="bi bi-info-circle-fill me-2"></i>Indicator: ${entry.indicator}`;
+  if (jsonBox) jsonBox.textContent = JSON.stringify(entry, null, 2);
 
-  riskBar.textContent = entry.severity;
-  riskBar.className = "badge";
-  if (entry.severity === "High") {
-    riskBar.classList.add("bg-danger");
-  } else if (entry.severity === "Medium") {
-    riskBar.classList.add("bg-warning", "text-dark");
-  } else {
-    riskBar.classList.add("bg-info", "text-dark");
+  if (riskBar) {
+    riskBar.textContent = entry.severity;
+    riskBar.className = "badge fs-6 ms-2 rounded-pill px-3 py-1"; // Reset and apply base classes
+    if (entry.severity === "High") {
+      riskBar.classList.add("bg-danger", "text-white");
+    } else if (entry.severity === "Medium") {
+      riskBar.classList.add("bg-warning", "text-dark");
+    } else {
+      riskBar.classList.add("bg-info", "text-dark");
+    }
   }
 
-  if (entry.source === "VirusTotal" && entry.indicator.includes(".")) {
-    vtLink.href = `https://www.virustotal.com/gui/ip-address/${entry.indicator}`;
-    vtLink.style.display = "inline-block";
-  } else {
-    vtLink.style.display = "none";
+  if (vtLink) {
+    if (entry.source === "VirusTotal" && (entry.type === "IP" || entry.type === "Domain" || entry.type === "URL" || entry.type === "FileHash")) {
+      let linkPath = "";
+      if (entry.type === "IP") linkPath = `ip-address/${entry.indicator}`;
+      else if (entry.type === "Domain") linkPath = `domain/${entry.indicator}`;
+      else if (entry.type === "URL") linkPath = `url/${entry.indicator}`;
+      else if (entry.type === "FileHash") linkPath = `file/${entry.indicator}`;
+      
+      if (linkPath) {
+        vtLink.href = `https://www.virustotal.com/gui/${linkPath}`;
+        vtLink.style.display = "inline-block";
+      } else {
+        vtLink.style.display = "none";
+      }
+    } else {
+      vtLink.style.display = "none";
+    }
   }
-
-  modal.show();
+  indicatorModal.show();
 }
 
+/**
+ * Copies the content of the JSON view to the clipboard.
+ */
 function copyToClipboard() {
-  const text = document.getElementById("jsonView").textContent;
+  const jsonBox = document.getElementById("jsonView");
+  if (!jsonBox) return;
+  const text = jsonBox.textContent;
   navigator.clipboard.writeText(text).then(() => {
-    alert("Copied to clipboard!");
+    showToast("Indicator details copied to clipboard!", "success");
+  }).catch(err => {
+    showToast("Failed to copy to clipboard.", "warning");
+    console.error("Clipboard copy error:", err);
   });
 }
 
+/**
+ * Shows a Bootstrap toast notification.
+ * @param {String} message - The message to display.
+ * @param {String} type - The type of toast (e.g., success, danger, warning).
+ */
+function showToast(message, type = "info") {
+    const toastEl = document.getElementById("errorToast"); // Reusing the existing toast element
+    if (!toastEl) return;
 
-applyTheme();
-loadData();
+    const toastBody = document.getElementById("toastMessage");
+    if (toastBody) toastBody.textContent = message;
+
+    // Remove existing color classes and add new one
+    toastEl.classList.remove("text-bg-danger", "text-bg-success", "text-bg-warning", "text-bg-info");
+    toastEl.classList.add(`text-bg-${type}`);
+
+    const toast = bootstrap.Toast.getOrCreateInstance(toastEl);
+    toast.show();
+}
+
+// Event Listeners
+document.addEventListener("DOMContentLoaded", () => {
+  applyTheme(); // Apply theme on initial load
+  loadData();   // Load initial data
+
+  // Keyboard navigation for table pagination
+  document.addEventListener("keydown", (e) => {
+    if (!allCTIData.length || document.activeElement?.closest(".modal")) return; // Don't interfere with modal inputs
+
+    const searchInput = document.getElementById("searchInput");
+    const jumpPageInput = document.getElementById("jumpPage");
+    if (document.activeElement === searchInput || document.activeElement === jumpPageInput) return; // Don't interfere if typing in search/jump
+
+    const searchValue = searchInput ? searchInput.value.toLowerCase() : "";
+    const filteredLength = allCTIData.filter(item =>
+      item.indicator.toLowerCase().includes(searchValue)
+    ).length;
+    const totalPages = Math.ceil(filteredLength / rowsPerPage);
+
+    if (e.key === "ArrowLeft" && currentPage > 1) {
+      e.preventDefault();
+      currentPage--;
+      renderTablePage();
+    } else if (e.key === "ArrowRight" && currentPage < totalPages) {
+      e.preventDefault();
+      currentPage++;
+      renderTablePage();
+    }
+  });
+});
