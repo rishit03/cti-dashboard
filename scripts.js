@@ -109,9 +109,9 @@ function loadData() {
         const msg = `⚠️ The following sources failed or hit limits: ${data.errors.join(", ")}`;
         document.getElementById("toastMessage").textContent = msg;
         const toastEl = document.getElementById("errorToast");
-        const toast = new bootstrap.Toast(toastEl);
-        toast.show();
+        new bootstrap.Toast(toastEl).show();
       }
+      
     })
     .catch(error => {
       console.error("Error fetching CTI data:", error);

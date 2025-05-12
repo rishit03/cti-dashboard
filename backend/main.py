@@ -46,7 +46,6 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
             if abuseipdb_response.status_code == 429:
                 print("[ERROR] AbuseIPDB rate limit reached")
                 errors.append("AbuseIPDB")
-                return {"data": normalized, "errors": errors}  # Optional early return
 
             if abuseipdb_response.status_code != 200:
                 print(f"[ERROR] AbuseIPDB returned {abuseipdb_response.status_code}")
@@ -84,81 +83,68 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
                     "https://otx.alienvault.com/api/v1/pulses/subscribed",
                     headers=headers
                 )
-            if otx_response.status_code == 200:
+            if otx_response.status_code != 200:
+                print(f"[ERROR] OTX returned {otx_response.status_code}")
+                errors.append("OTX")
+            else:
                 results = otx_response.json().get("results", [])
-                for pulse in results[:10]:
-                    pulse_name = pulse.get("name", "").lower()
-                    for indicator in pulse.get("indicators", []):
-                        indicator_type = indicator.get("type", "").lower()
-                        if "ransomware" in pulse_name or "apt" in pulse_name:
-                            severity_level = "High"
-                        elif indicator_type in ["ipv4", "domain"]:
-                            severity_level = "Medium"
-                        else:
-                            severity_level = "Low"
-
-                        entry = {
-                            "indicator": indicator.get("indicator"),
-                            "type": indicator.get("type"),
-                            "source": "OTX",
-                            "severity": severity_level,
-                            "categories": [pulse.get("name", "OTX Pulse")],
-                            "reported_at": pulse.get("modified")
-                        }
-                        if severity and entry["severity"] != severity:
-                            continue
-                        normalized.append(entry)
+                # ... process data
         except Exception:
             print("[ERROR] OTX request failed:")
             traceback.print_exc()
             errors.append("OTX")
 
+
     # === VirusTotal ===
     if not source or source == "VirusTotal":
-        headers = {
-            "x-apikey": VT_API_KEY
-        }
+        headers = { "x-apikey": VT_API_KEY }
         sample_ips = ["185.232.67.76", "8.8.8.8", "1.1.1.1"]
 
         try:
             async with httpx.AsyncClient(timeout=20.0) as client:
                 for ip in sample_ips:
-                    vt_response = await client.get(
+                    response = await client.get(
                         f"https://www.virustotal.com/api/v3/ip_addresses/{ip}",
                         headers=headers
                     )
-                    if vt_response.status_code == 200:
-                        result = vt_response.json().get("data", {})
-                        stats = result.get("attributes", {}).get("last_analysis_stats", {})
-                        categories = result.get("attributes", {}).get("tags", []) or []
 
-                        detections = stats.get("malicious", 0) + stats.get("suspicious", 0)
-                        if detections >= 5:
-                            severity_level = "High"
-                        elif detections >= 1:
-                            severity_level = "Medium"
-                        else:
-                            severity_level = "Low"
+                    if response.status_code != 200:
+                        print(f"[ERROR] VirusTotal IP {ip} returned {response.status_code}")
+                        errors.append("VirusTotal")
+                        continue
 
-                        entry = {
-                            "indicator": ip,
-                            "type": "IP",
-                            "source": "VirusTotal",
-                            "severity": severity_level,
-                            "categories": categories or ["Unknown"],
-                            "reported_at": result.get("attributes", {}).get("last_analysis_date", "N/A")
-                        }
+                    result = response.json().get("data", {})
+                    stats = result.get("attributes", {}).get("last_analysis_stats", {})
+                    categories = result.get("attributes", {}).get("tags", []) or []
 
-                        if isinstance(entry["reported_at"], int):
-                            entry["reported_at"] = datetime.utcfromtimestamp(entry["reported_at"]).isoformat() + "Z"
+                    detections = stats.get("malicious", 0) + stats.get("suspicious", 0)
+                    severity_level = (
+                        "High" if detections >= 5 else
+                        "Medium" if detections >= 1 else
+                        "Low"
+                    )
 
-                        if severity and entry["severity"] != severity:
-                            continue
-                        normalized.append(entry)
+                    entry = {
+                        "indicator": ip,
+                        "type": "IP",
+                        "source": "VirusTotal",
+                        "severity": severity_level,
+                        "categories": categories or ["Unknown"],
+                        "reported_at": result.get("attributes", {}).get("last_analysis_date", "N/A")
+                    }
+
+                    if isinstance(entry["reported_at"], int):
+                        entry["reported_at"] = datetime.utcfromtimestamp(entry["reported_at"]).isoformat() + "Z"
+
+                    if severity and entry["severity"] != severity:
+                        continue
+                    normalized.append(entry)
+
         except Exception:
             print("[ERROR] VirusTotal request failed:")
             traceback.print_exc()
             errors.append("VirusTotal")
+
 
     # === MalwareBazaar ===
     if not source or source == "MalwareBazaar":
@@ -171,37 +157,41 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
                         headers={"Content-Type": "application/x-www-form-urlencoded"},
                         data={"query": "get_taginfo", "tag": tag}
                     )
-                    if response.status_code == 200:
-                        results = response.json().get("data", [])
-                        for item in results[:7]:
-                            tag_list = item.get("tags", []) or []
-                            signature = (item.get("signature") or "").lower()
 
-                            if "ransomware" in tag_list or "ransom" in signature:
-                                severity_level = "High"
-                            elif "stealer" in tag_list or "trojan" in signature:
-                                severity_level = "Medium"
-                            else:
-                                severity_level = "Low"
+                    if response.status_code != 200:
+                        print(f"[ERROR] MalwareBazaar tag {tag} returned {response.status_code}")
+                        errors.append("MalwareBazaar")
+                        continue
 
-                            entry = {
-                                "indicator": item.get("sha256_hash"),
-                                "type": "Hash",
-                                "source": "MalwareBazaar",
-                                "severity": severity_level,
-                                "categories": tag_list + [signature] if signature else tag_list,
-                                "reported_at": item.get("first_seen", "N/A")
-                            }
+                    results = response.json().get("data", [])
+                    for item in results[:7]:
+                        tag_list = item.get("tags", []) or []
+                        signature = (item.get("signature") or "").lower()
 
-                            if severity and entry["severity"] != severity:
-                                continue
-                            normalized.append(entry)
+                        severity_level = (
+                            "High" if "ransomware" in tag_list or "ransom" in signature else
+                            "Medium" if "stealer" in tag_list or "trojan" in signature else
+                            "Low"
+                        )
+
+                        entry = {
+                            "indicator": item.get("sha256_hash"),
+                            "type": "Hash",
+                            "source": "MalwareBazaar",
+                            "severity": severity_level,
+                            "categories": tag_list + [signature] if signature else tag_list,
+                            "reported_at": item.get("first_seen", "N/A")
+                        }
+
+                        if severity and entry["severity"] != severity:
+                            continue
+                        normalized.append(entry)
+
         except Exception:
             print("[ERROR] MalwareBazaar request failed:")
             traceback.print_exc()
             errors.append("MalwareBazaar")
 
-    return { "data": normalized, "errors": errors }
 
 # === VirusTotal Real-Time IP Lookup Endpoint ===
 
