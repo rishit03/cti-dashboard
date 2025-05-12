@@ -275,7 +275,11 @@ function applyTheme() {
   document.querySelectorAll("table").forEach(tbl => tbl.classList.toggle("table-dark", isDark));
   document.querySelectorAll(".card").forEach(card => {
     card.classList.remove("bg-light", "bg-dark", "text-light", "text-white");
-    card.classList.add(isDark ? "bg-dark text-white" : "bg-light text-dark");
+    if (isDark) {
+      card.classList.add("bg-dark", "text-white");
+    } else {
+      card.classList.add("bg-light", "text-dark");
+    }    
   });
 
   document.getElementById("cardTotal").className = "card shadow-sm border-0 " + (isDark ? "bg-primary text-white" : "bg-primary text-white");
