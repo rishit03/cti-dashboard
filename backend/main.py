@@ -29,6 +29,46 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
     normalized = []
     errors = []
 
+    try:
+        if not source or source == "AbuseIPDB":
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                response = await client.get(
+                    "https://api.abuseipdb.com/api/v2/blacklist",
+                    params={"confidenceMinimum": 25},
+                    headers={
+                        "Key": ABUSEIPDB_API_KEY,
+                        "Accept": "application/json"
+                    }
+                )
+            if response.status_code == 429:
+                print("[ERROR] AbuseIPDB rate limit reached")
+                errors.append("AbuseIPDB")
+            elif response.status_code != 200:
+                print(f"[ERROR] AbuseIPDB returned {response.status_code}")
+                errors.append("AbuseIPDB")
+            else:
+                data = response.json()
+                for item in data.get("data", []):
+                    entry = {
+                        "indicator": item.get("ipAddress"),
+                        "type": "IP",
+                        "source": "AbuseIPDB",
+                        "severity": "High" if item.get("abuseConfidenceScore", 0) > 75 else "Medium",
+                        "categories": ["Blacklisted"],
+                        "reported_at": "N/A"
+                    }
+                    if severity and entry["severity"] != severity:
+                        continue
+                    normalized.append(entry)
+    except Exception:
+        print("[ERROR] AbuseIPDB request failed:")
+        traceback.print_exc()
+        errors.append("AbuseIPDB")
+
+    # ✅ Final return ensures frontend never gets null
+    return { "data": normalized, "errors": errors }
+
+
     # === AbuseIPDB ===
     if not source or source == "AbuseIPDB":
         headers = {
