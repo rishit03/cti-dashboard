@@ -139,8 +139,29 @@
         color: var(--header-text-color) !important;
     }
 
+    .theme-toggle-switch {
+      position: absolute;
+      top: 1.5rem; /* Adjust as needed for vertical centering relative to header content */
+      right: 1.5rem;
+      display: flex; /* Use flexbox for alignment */
+      align-items: center; /* Vertically center items within the switch container */
+    }
+    .theme-toggle-switch .form-check-input {
+        width: 2.5em;
+        height: 1.25em;
+        margin: 0; /* Remove default margins if any */
+        flex-shrink: 0;
+    }
     .theme-toggle-switch .form-check-label {
         color: var(--header-text-color);
+        padding-left: 0.5rem; /* Space between switch and icon */
+        display: inline-flex; /* Ensure label and icon are aligned */
+        align-items: center;
+        margin-bottom: 0; /* Remove default bottom margin from label */
+    }
+    .theme-toggle-switch .form-check-label i#themeIcon {
+        font-size: 1.1rem; /* Adjust icon size if needed */
+        line-height: 1; /* Ensure icon is vertically centered */
     }
 
     .card {
@@ -545,3 +566,4 @@
   <script src="scripts.js"></script>
 </body>
 </html>
+
