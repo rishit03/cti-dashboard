@@ -160,9 +160,10 @@ function renderTablePage() {
 
     const detailsRowId = `details-${entry.indicator.replace(/[^a-zA-Z0-9]/g, "")}`;
     row.innerHTML = `
-      <td class="fw-bold text-decoration-underline" style="cursor:pointer;" onclick="toggleDetails('${detailsRowId}', this)">
-        <i class="bi bi-chevron-right me-1 toggle-icon"></i>${entry.indicator}
+      <td class="fw-bold text-decoration-underline" style="cursor:pointer;" onclick='showIndicatorModal(${JSON.stringify(entry)})'>
+        <i class="bi bi-info-circle me-1 text-primary"></i>${entry.indicator}
       </td>
+
       <td>${severityBadge}</td>
       <td>${entry.source}</td>
     `;
@@ -375,6 +376,42 @@ document.addEventListener("keydown", (e) => {
     renderTablePage();
   }
 });
+
+function showIndicatorModal(entry) {
+  const modal = new bootstrap.Modal(document.getElementById("indicatorModal"));
+  const jsonBox = document.getElementById("jsonView");
+  const riskBar = document.getElementById("riskBar");
+  const vtLink = document.getElementById("vtLink");
+
+  jsonBox.textContent = JSON.stringify(entry, null, 2);
+
+  riskBar.textContent = entry.severity;
+  riskBar.className = "badge";
+  if (entry.severity === "High") {
+    riskBar.classList.add("bg-danger");
+  } else if (entry.severity === "Medium") {
+    riskBar.classList.add("bg-warning", "text-dark");
+  } else {
+    riskBar.classList.add("bg-info", "text-dark");
+  }
+
+  if (entry.source === "VirusTotal" && entry.indicator.includes(".")) {
+    vtLink.href = `https://www.virustotal.com/gui/ip-address/${entry.indicator}`;
+    vtLink.style.display = "inline-block";
+  } else {
+    vtLink.style.display = "none";
+  }
+
+  modal.show();
+}
+
+function copyToClipboard() {
+  const text = document.getElementById("jsonView").textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    alert("Copied to clipboard!");
+  });
+}
+
 
 applyTheme();
 loadData();
