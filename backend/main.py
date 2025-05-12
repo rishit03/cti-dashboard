@@ -42,7 +42,19 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
                     params={"confidenceMinimum": 25},
                     headers=headers
                 )
+
+            if abuseipdb_response.status_code == 429:
+                print("[ERROR] AbuseIPDB rate limit reached")
+                errors.append("AbuseIPDB")
+                return {"data": normalized, "errors": errors}  # Optional early return
+
+            if abuseipdb_response.status_code != 200:
+                print(f"[ERROR] AbuseIPDB returned {abuseipdb_response.status_code}")
+                errors.append("AbuseIPDB")
+                return {"data": normalized, "errors": errors}
+
             abuse_data = abuseipdb_response.json()
+
             for item in abuse_data.get("data", []):
                 severity_level = "High" if item.get("abuseConfidenceScore", 0) > 75 else "Medium"
                 entry = {
