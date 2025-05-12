@@ -288,6 +288,30 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Indicator Detail Modal -->
+  <div class="modal fade" id="indicatorModal" tabindex="-1" aria-labelledby="indicatorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title" id="indicatorModalLabel">Indicator Details</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+            <strong>Severity:</strong>
+            <span id="riskBar" class="badge"></span>
+          </div>
+          <div class="mb-3">
+            <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard()">📋 Copy JSON</button>
+            <a id="vtLink" class="btn btn-sm btn-outline-primary ms-2" target="_blank" style="display:none;">🔗 View on VirusTotal</a>
+          </div>
+          <pre id="jsonView" class="bg-light text-dark p-2 rounded small"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="scripts.js"></script>
 </body>
 </html>
