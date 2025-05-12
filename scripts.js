@@ -313,22 +313,21 @@ function lookupVTIp() {
   const resultBox = document.getElementById("vtResult");
 
   if (!ip) {
-    resultBox.innerHTML = "<div class='text-danger'>⚠️ Please enter a valid IP address.</div>";
+    resultBox.innerHTML = "<div class='text-danger'>❌ Please enter a valid IP address.</div>";
     return;
   }
 
   resultBox.innerHTML = "<div class='text-muted'>⏳ Fetching from VirusTotal...</div>";
 
   fetch(`https://cti-dashboard-9j95.onrender.com/vt-lookup?ip=${ip}`)
-    .then(res => res.json())
     .then(async res => {
       const data = await res.json();
-      
+
       if (!res.ok) {
-        resultBox.innerHTML = `<div class='text-danger'>❌ ${data.detail || "Invalid input or blocked by VirusTotal."}</div>`;
+        resultBox.innerHTML = `<div class='text-danger'>❌ ${data.detail || data.error || "Invalid IP or request blocked"}</div>`;
         return;
       }
-    
+
       resultBox.innerHTML = `
         <div><strong>IP:</strong> ${ip}</div>
         <div><strong>Malicious:</strong> ${data.malicious}</div>
@@ -340,12 +339,12 @@ function lookupVTIp() {
         </div>
       `;
     })
-    
     .catch(err => {
       console.error(err);
-      resultBox.innerHTML = "<div class='text-danger'>⚠️ Failed to fetch data from backend.</div>";
+      resultBox.innerHTML = "<div class='text-danger'>⚠️ Failed to fetch data from the backend.</div>";
     });
 }
+
 
 
 document.addEventListener("keydown", (e) => {
