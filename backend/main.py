@@ -5,7 +5,6 @@ import os
 import traceback
 from dotenv import load_dotenv
 from datetime import datetime
-import re
 import ipaddress
 
 load_dotenv()
@@ -29,8 +28,9 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
     normalized = []
     errors = []
 
-    try:
-        if not source or source == "AbuseIPDB":
+    # === AbuseIPDB ===
+    if not source or source == "AbuseIPDB":
+        try:
             async with httpx.AsyncClient(timeout=20.0) as client:
                 response = await client.get(
                     "https://api.abuseipdb.com/api/v2/blacklist",
@@ -60,85 +60,56 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
                     if severity and entry["severity"] != severity:
                         continue
                     normalized.append(entry)
-    except Exception:
-        print("[ERROR] AbuseIPDB request failed:")
-        traceback.print_exc()
-        errors.append("AbuseIPDB")
-
-    # ✅ Final return ensures frontend never gets null
-    return { "data": normalized, "errors": errors }
-
-
-    # === AbuseIPDB ===
-    if not source or source == "AbuseIPDB":
-        headers = {
-            "Key": ABUSEIPDB_API_KEY,
-            "Accept": "application/json"
-        }
-        try:
-            async with httpx.AsyncClient(timeout=20.0) as client:
-                response = await client.get(
-                    "https://api.abuseipdb.com/api/v2/blacklist",
-                    params={"confidenceMinimum": 25},
-                    headers=headers
-                )
-
-            if response.status_code == 429:
-                print("[ERROR] AbuseIPDB rate limit reached")
-                errors.append("AbuseIPDB")
-            elif response.status_code != 200:
-                print(f"[ERROR] AbuseIPDB returned {response.status_code}")
-                errors.append("AbuseIPDB")
-            else:
-                abuse_data = response.json()
-                for item in abuse_data.get("data", []):
-                    severity_level = "High" if item.get("abuseConfidenceScore", 0) > 75 else "Medium"
-                    entry = {
-                        "indicator": item.get("ipAddress"),
-                        "type": "IP",
-                        "source": "AbuseIPDB",
-                        "severity": severity_level,
-                        "categories": ["Blacklisted"],
-                        "reported_at": "N/A"
-                    }
-                    if severity and entry["severity"] != severity:
-                        continue
-                    normalized.append(entry)
-
         except Exception:
             print("[ERROR] AbuseIPDB request failed:")
             traceback.print_exc()
             errors.append("AbuseIPDB")
 
-
     # === OTX ===
     if not source or source == "OTX":
-        headers = {
-            "X-OTX-API-KEY": OTX_API_KEY
-        }
+        headers = {"X-OTX-API-KEY": OTX_API_KEY}
         try:
             async with httpx.AsyncClient(timeout=20.0) as client:
-                otx_response = await client.get(
+                response = await client.get(
                     "https://otx.alienvault.com/api/v1/pulses/subscribed",
                     headers=headers
                 )
-            if otx_response.status_code != 200:
-                print(f"[ERROR] OTX returned {otx_response.status_code}")
+            if response.status_code != 200:
+                print(f"[ERROR] OTX returned {response.status_code}")
                 errors.append("OTX")
             else:
-                results = otx_response.json().get("results", [])
-                # ... process data
+                results = response.json().get("results", [])
+                for pulse in results[:10]:
+                    pulse_name = pulse.get("name", "").lower()
+                    for indicator in pulse.get("indicators", []):
+                        indicator_type = indicator.get("type", "").lower()
+                        if "ransomware" in pulse_name or "apt" in pulse_name:
+                            severity_level = "High"
+                        elif indicator_type in ["ipv4", "domain"]:
+                            severity_level = "Medium"
+                        else:
+                            severity_level = "Low"
+
+                        entry = {
+                            "indicator": indicator.get("indicator"),
+                            "type": indicator.get("type"),
+                            "source": "OTX",
+                            "severity": severity_level,
+                            "categories": [pulse.get("name", "OTX Pulse")],
+                            "reported_at": pulse.get("modified")
+                        }
+                        if severity and entry["severity"] != severity:
+                            continue
+                        normalized.append(entry)
         except Exception:
             print("[ERROR] OTX request failed:")
             traceback.print_exc()
             errors.append("OTX")
 
-
     # === VirusTotal ===
     if not source or source == "VirusTotal":
-        headers = { "x-apikey": VT_API_KEY }
+        headers = {"x-apikey": VT_API_KEY}
         sample_ips = ["185.232.67.76", "8.8.8.8", "1.1.1.1"]
-
         try:
             async with httpx.AsyncClient(timeout=20.0) as client:
                 for ip in sample_ips:
@@ -146,7 +117,6 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
                         f"https://www.virustotal.com/api/v3/ip_addresses/{ip}",
                         headers=headers
                     )
-
                     if response.status_code != 200:
                         print(f"[ERROR] VirusTotal IP {ip} returned {response.status_code}")
                         errors.append("VirusTotal")
@@ -178,12 +148,10 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
                     if severity and entry["severity"] != severity:
                         continue
                     normalized.append(entry)
-
         except Exception:
             print("[ERROR] VirusTotal request failed:")
             traceback.print_exc()
             errors.append("VirusTotal")
-
 
     # === MalwareBazaar ===
     if not source or source == "MalwareBazaar":
@@ -225,12 +193,12 @@ async def get_cti_data(severity: str = Query(None), source: str = Query(None)):
                         if severity and entry["severity"] != severity:
                             continue
                         normalized.append(entry)
-
         except Exception:
             print("[ERROR] MalwareBazaar request failed:")
             traceback.print_exc()
             errors.append("MalwareBazaar")
 
+    return { "data": normalized, "errors": errors }
 
 # === VirusTotal Real-Time IP Lookup Endpoint ===
 
@@ -248,9 +216,7 @@ async def vt_lookup(ip: str):
     if not is_valid_ip(ip):
         raise HTTPException(status_code=400, detail="Invalid IP format")
 
-    headers = {
-        "x-apikey": VT_API_KEY
-    }
+    headers = { "x-apikey": VT_API_KEY }
 
     try:
         async with httpx.AsyncClient(timeout=20.0) as client:
@@ -266,7 +232,8 @@ async def vt_lookup(ip: str):
             "malicious": attr.get("last_analysis_stats", {}).get("malicious", 0),
             "suspicious": attr.get("last_analysis_stats", {}).get("suspicious", 0),
             "tags": attr.get("tags", []) or ["Unknown"],
-            "last_analysis": datetime.utcfromtimestamp(attr.get("last_analysis_date", 0)).isoformat() if attr.get("last_analysis_date") else "N/A"
+            "last_analysis": datetime.utcfromtimestamp(attr.get("last_analysis_date", 0)).isoformat()
+            if attr.get("last_analysis_date") else "N/A"
         }
 
     except Exception as e:
