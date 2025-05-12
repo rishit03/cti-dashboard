@@ -84,7 +84,13 @@ function loadData() {
           scales: {
             y: {
               beginAtZero: true,
-              ticks: { stepSize: 1, color: labelColor },
+              ticks: {
+                stepSize: 1,
+                color: labelColor  // ✅ dynamically uses white in dark mode
+              },
+              grid: {
+                color: isDark ? "#555" : "#ccc",  // ✅ line color for grid
+              },
               title: {
                 display: true,
                 text: "Number of Indicators",
@@ -93,7 +99,12 @@ function loadData() {
               }
             },
             x: {
-              ticks: { color: labelColor },
+              ticks: {
+                color: labelColor
+              },
+              grid: {
+                color: isDark ? "#555" : "#ccc"  // ✅ horizontal lines
+              },
               title: {
                 display: true,
                 text: "Severity Level",
@@ -101,7 +112,7 @@ function loadData() {
                 font: { size: 14, weight: "bold" }
               }
             }
-          }
+          }          
         }
       });
 
